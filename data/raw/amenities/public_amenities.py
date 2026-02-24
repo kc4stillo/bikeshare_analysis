@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import geopandas as gpd
 import pandas as pd
 from shapely import wkt
@@ -155,14 +157,11 @@ parks_m["area_acres"] = parks_m["area_m2"] / 4046.86
 parks = parks_m[parks_m["area_acres"] > 15].copy()[["LOCATION_NAME", "geometry"]]
 parks.columns = ["name", "geometry"]
 
-# 	name	geometry
-# 0	Scofield Farms Neighborhood Park	MULTIPOLYGON (((626537.567 3365536.079, 626547...
-# 8	Bartholomew District Park	MULTIPOLYGON (((625454.104 3353271.854, 625460...
-# 9	Marble Creek Greenbelt	MULTIPOLYGON (((621952.775 3337418.217, 621938...
-# 11	Zilker Metro Park	MULTIPOLYGON (((618728.587 3349230.934, 618733...
-# 15	Lower Bull Creek Greenbelt	MULTIPOLYGON (((618519.901 3361899.499, 618469..
-
-
-temp_station = (30.285770387928157, -97.74160058684157)
+parks
 
 # %%
+out_dir = Path("../../cleaned/amenities")
+out_dir.mkdir(parents=True, exist_ok=True)
+
+amenities.to_csv(out_dir / "amenities.csv", index=False)
+parks.to_csv(out_dir / "parks.csv", index=False)
