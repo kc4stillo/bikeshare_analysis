@@ -1,5 +1,6 @@
 # %%
 import re
+from pathlib import Path
 
 import pandas as pd
 
@@ -123,8 +124,6 @@ current_stat_df = df.iloc[:72].copy()
 projected_stat_df = df.iloc[74:81].copy()
 
 # %%
-from pathlib import Path
-
 out_dir = Path("../cleaned")
 out_dir.mkdir(parents=True, exist_ok=True)
 
