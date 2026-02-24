@@ -31,7 +31,7 @@ def clean_station_rubric(df: pd.DataFrame) -> pd.DataFrame:
             .str.strip()
             .str.lower()
             .str.replace("/", " and ", regex=False)
-            .str.replace("@", " at", regex=False)
+            .str.replace("@", " at ", regex=False)
             .str.replace(" ", "_", regex=False)
         )
 
@@ -71,6 +71,10 @@ def clean_station_rubric(df: pd.DataFrame) -> pd.DataFrame:
         df["total_docks"] = pd.to_numeric(df["total_docks"], errors="coerce").astype(
             "Int64"
         )
+    if "total_checkouts" in df.columns:
+        df["total_checkouts"] = pd.to_numeric(
+            df["total_checkouts"], errors="coerce"
+        ).astype("Int64")
 
     numeric_cols = [
         "total_checkouts",
@@ -126,3 +130,5 @@ out_dir.mkdir(parents=True, exist_ok=True)
 
 current_stat_df.to_csv(out_dir / "current_stations_cleaned.csv", index=False)
 projected_stat_df.to_csv(out_dir / "projected_stations_cleaned.csv", index=False)
+
+# %%
