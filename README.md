@@ -3,7 +3,6 @@ title: "CapMetro Bikeshare Station Performance + Future Station Planning"
 author: "Kyle Castillo (kmc5794@eid.utexas.edu)"
 output: github_document
 ---
-
 ### Overview
 Applied capstone to understand how built-environment factors and station upgrades (especially electrification) relate to Bikeshare ridership/performance, to support new station placement and potential relocation of underperforming stations.
 
