@@ -22,9 +22,8 @@ def clean_station_rubric(df: pd.DataFrame) -> pd.DataFrame:
     # Normalize column labels
     df.columns = [str(c).strip() for c in df.columns]
 
-    # ----------------------------
     # 1) Standardize station name
-    # ----------------------------
+
     if "name" in df.columns:
         df["name"] = (
             df["name"]
@@ -33,12 +32,10 @@ def clean_station_rubric(df: pd.DataFrame) -> pd.DataFrame:
             .str.lower()
             .str.replace("/", " and ", regex=False)
             .str.replace("@", " at", regex=False)
-            .str.replace(" ", "_", regex=False)  # ✅ replace spaces with _
+            .str.replace(" ", "_", regex=False)
         )
 
-    # ----------------------------
     # 2) Rename long columns
-    # ----------------------------
     rename_map = {
         "Active Date": "active_date",
         "Districts": "district",
@@ -62,9 +59,7 @@ def clean_station_rubric(df: pd.DataFrame) -> pd.DataFrame:
     df = df.rename(columns=rename_map)
     df = df.rename(columns={c: to_snake(c) for c in df.columns})
 
-    # ----------------------------
     # 3) Fix datatypes
-    # ----------------------------
     if "id" in df.columns:
         df["id"] = pd.to_numeric(df["id"], errors="coerce").astype("Int64")
         df = df[df["id"].notna()].copy()  # drop rows where id is missing
@@ -100,9 +95,7 @@ def clean_station_rubric(df: pd.DataFrame) -> pd.DataFrame:
     if "active_date" in df.columns:
         df["active_date"] = pd.to_datetime(df["active_date"], errors="coerce")
 
-    # ----------------------------
     # 4) Clean EBS column
-    # ----------------------------
     if "ebs_station" in df.columns:
         df["ebs_station"] = df["ebs_station"].astype("string").str.strip()
 
@@ -111,9 +104,7 @@ def clean_station_rubric(df: pd.DataFrame) -> pd.DataFrame:
         # Convert remaining missing to 0
         df["ebs_station"] = df["ebs_station"].fillna(0).astype(int)
 
-    # ----------------------------
     # 5) Replace <NA> strings everywhere else with np.nan
-    # ----------------------------
 
     return df
 
