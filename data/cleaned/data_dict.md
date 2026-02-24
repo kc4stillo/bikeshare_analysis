@@ -1,4 +1,4 @@
-# MetroBike Station Rubric — Data Dictionary
+# Cleaned Data Dictionary
 
 ## Overview
 
