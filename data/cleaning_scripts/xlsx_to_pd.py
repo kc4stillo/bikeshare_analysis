@@ -115,7 +115,7 @@ def clean_station_rubric(df: pd.DataFrame) -> pd.DataFrame:
 
 
 # %%
-file_path = "curr_station_rubric.xlsx"
+file_path = "../raw/scoring/curr_station_rubric.xlsx"
 raw_df = pd.read_excel(file_path, header=2)
 
 df = clean_station_rubric(raw_df)
@@ -124,10 +124,8 @@ current_stat_df = df.iloc[:72].copy()
 projected_stat_df = df.iloc[74:81].copy()
 
 # %%
-out_dir = Path("../cleaned")
+out_dir = Path("../cleaned/scoring")
 out_dir.mkdir(parents=True, exist_ok=True)
 
 current_stat_df.to_csv(out_dir / "current_stations_cleaned.csv", index=False)
 projected_stat_df.to_csv(out_dir / "projected_stations_cleaned.csv", index=False)
-
-# %%

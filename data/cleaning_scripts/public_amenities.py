@@ -7,11 +7,10 @@ from shapely import wkt
 pd.set_option("display.max_rows", None)
 pd.set_option("display.max_columns", None)
 
-pools = pd.read_csv("austin_pools.csv")
-libraries = pd.read_csv("library_locations.csv")
-recs = pd.read_csv("rec_center_locations.csv")
-parks = pd.read_csv("park_borders.csv")
-
+pools = pd.read_csv("../raw/amenities/austin_pools.csv")
+libraries = pd.read_csv("../raw/amenities/library_locations.csv")
+recs = pd.read_csv("../raw/amenities/rec_center_locations.csv")
+parks = pd.read_csv("../raw/amenities/park_borders.csv")
 
 # %%
 # extract lat/long from pools
@@ -139,7 +138,6 @@ amenities.head()
 # %%
 parks.head()
 
-parks = pd.read_csv("park_borders.csv")
 parks = parks[["LOCATION_NAME", "the_geom"]].dropna()
 
 parks_gdf = gpd.GeoDataFrame(

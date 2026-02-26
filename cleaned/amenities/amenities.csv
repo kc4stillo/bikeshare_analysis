@@ -1,0 +1,104 @@
+name,lat,lon,amenity
+Baily Splashpad,30.302605251000045,-97.74689354299994,pool
+Brentwood,30.340441576000046,-97.73037097399998,pool
+Colony Park,30.2977969,-97.6417013,pool
+Stacy Wading,30.241312486000027,-97.74557365799996,pool
+Mabel Davis,30.22025858300003,-97.74271075999997,pool
+Rosewood,30.271339,-97.713836,pool
+Martin,30.250938086000076,-97.73110151999998,pool
+Dottie Jordan,30.314319348000026,-97.67341137899996,pool
+Govalle,30.258835826000052,-97.69156788399994,pool
+Murchison,30.35336556900006,-97.75870788799995,pool
+Balcones,30.41340406100005,-97.72085543099996,pool
+Canyon Vista,30.427132347000054,-97.78468953899994,pool
+Montopolis,30.231947330000025,-97.69905656299994,pool
+Rosewood Splashpad,30.271339,-97.713836,pool
+Kennemer,30.36075515300007,-97.70649799899996,pool
+Pease Splashpad,30.28291173100007,-97.75437819199999,pool
+Clarksville Splashpad,30.282105005000062,-97.76410287199997,pool
+Dittmar,30.185743134000063,-97.80106115899997,pool
+Stacy,30.239596177000067,-97.74730836399999,pool
+Bartholomew,30.302395535000073,-97.69739842999996,pool
+Patterson,30.296592644000043,-97.71400165799997,pool
+Ramsey,30.31187897700005,-97.74379847899996,pool
+Westenfield,30.286483287000067,-97.76496863899996,pool
+Garrison,30.212930071000073,-97.80184931899998,pool
+Liz Carpenter Splashpad,30.260196671000074,-97.75523145399995,pool
+West Austin,30.27739562900007,-97.75705321199996,pool
+Metz Splashpad,30.252683793000074,-97.71813028399998,pool
+Dick Nichols,30.21486475200004,-97.86331548799996,pool
+Chestnut Splashpad,30.27750823100007,-97.73795600299997,pool
+Shipe,30.306847952000055,-97.72711577799998,pool
+Bartholomew Splashpad,30.305630359000077,-97.69783935199996,pool
+Reed,30.303090361000045,-97.77087252699994,pool
+Gillis,30.239795595000032,-97.75878452399996,pool
+Eastwoods Splashpad,30.291143504000047,-97.73212589899998,pool
+Parque Zaragoza,30.262200781000047,-97.71307661199995,pool
+Deep Eddy,30.277590365000037,-97.77288902099997,pool
+Walnut Creek,30.398443986000075,-97.67950234099999,pool
+Springwoods,30.466694790000076,-97.78281477599995,pool
+Metz,30.252683793000074,-97.71813028399998,pool
+Lott Splashpad,30.269695108000064,-97.73017088999995,pool
+Civitan,30.237021979000076,-97.69142730499999,pool
+Ricky Guerrero Splashpad,30.246923898000034,-97.76367140099995,pool
+Northwest,30.348728787000027,-97.73985425299998,pool
+Givens,30.27832090800007,-97.69072592299995,pool
+Barton Springs,30.265983430000063,-97.76862557799996,pool
+Dove Springs,30.18812383100004,-97.73920481399995,pool
+Alamo Recreation,30.282633,-97.719847,rec_center
+Dottie Jordan Recreation Center,30.314377,-97.673367,rec_center
+"Lorraine ""Grandma"" Camacho Activity Center",30.250098,-97.723303,rec_center
+Oswaldo A. B. Cantu/Pan American Recreation Center,30.257841,-97.72081,rec_center
+Austin Recreation Center,30.278124,-97.750481,rec_center
+George Morales Dove Springs Recreation Center,30.187717,-97.739513,rec_center
+Hancock Recreation Center,30.300555,-97.72412,rec_center
+Northwest Recreation Center,30.334544,-97.751662,rec_center
+Danny G. McBeth Recreation Center,30.266784,-97.777218,rec_center
+South Austin Recreation Center,30.241006,-97.768842,rec_center
+Montopolis Recreation Center,30.231914,-97.699009,rec_center
+Givens Recration Center,30.278373,-97.690739,rec_center
+Delores Duffie Recreation Center,30.273088,-97.713999,rec_center
+Turner-Roberts Recreation Center,30.302601,-97.637029,rec_center
+Pickfair Community Center,30.43875,-97.810789,rec_center
+"Rodolfo ""Rudy"" Mendez Recreation Center",30.252716,-97.718138,rec_center
+"Gustavo ""Gus"" L. Garcia Recration Center",30.354041,-97.681519,rec_center
+Virginia L. Brown Recreation Center,30.331949,-97.693032,rec_center
+Dittmar Recreation Center,30.185674,-97.801794,rec_center
+Parque Zaragoza Recreation Center,30.261364,-97.712134,rec_center
+Austin History Center - John Henry Faulk Building,30.2717033,-97.7458906,library
+Carver Branch,30.2695646,-97.7240438,library
+Central Library,30.2656082,-97.7518784,library
+Little Walnut Creek Branch,30.3634073,-97.6983905,library
+University Hills Branch,30.3087022,-97.6666257,library
+Howson Branch,30.2982409,-97.7676021,library
+John Gillum Branch (North Village),30.3621393,-97.7306433,library
+Hampton Branch at Oak Hill,30.217637,-97.855059,library
+Ruiz Branch,30.2298616,-97.7070109,library
+Recycled Reads Bookstore,30.3269378,-97.7392783,library
+Old Quarry Branch,30.353094,-97.755306,library
+St. John Branch,30.3328231,-97.6937014,library
+Spicewood Springs Branch,30.433823,-97.7731777,library
+Yarborough Branch,30.3234272,-97.7407113,library
+Windsor Park Branch,30.3116489,-97.6902187,library
+Southeast Branch,30.1873206,-97.7422807,library
+Pleasant Hill Branch,30.192289,-97.7770437,library
+Twin Oaks Branch,30.2486968,-97.7623813,library
+Terrazas Branch,30.259907,-97.73344,library
+Milwood Branch,30.4223425,-97.7160975,library
+Menchaca Road Branch,30.2165903,-97.7973684,library
+Willie Mae Kirk Branch,30.2731685,-97.6996626,library
+Cepeda Branch,30.2590808,-97.7089017,library
+Perry-Castañeda Library,30.28309620135224,-97.7383782827987,library
+Harry Ransom Center,30.284909196600626,-97.74107219687771,library
+Classics Library,30.285694518893653,-97.73781814401929,library
+Fine Arts Library,30.286082575971204,-97.7317382624085,library
+Architecture and Planning Library,30.28549697243695,-97.740770264628,library
+Life Science Library,30.286222065016737,-97.73727582125527,library
+Mallet Chemistry Library,30.286865523109753,-97.73788442524756,library
+Kuehne Physics Mathematics Astronomy Library,30.28938992969517,-97.73649160949135,library
+Masterson Library,30.291928752326363,-97.74003773918234,library
+Wright Learning and Information Center (Stitt Library),30.292277580745534,-97.73743394220428,library
+LBJ Presidential Library,30.286376941567713,-97.72924465621654,library
+Travis County Law Library & Self-Help Center,30.280399684477764,-97.74254569872491,library
+Legislative Library,30.276041773045325,-97.74040857314445,library
+Texas State Library and Archives Commission,30.27458498763517,-97.7385147865229,library
