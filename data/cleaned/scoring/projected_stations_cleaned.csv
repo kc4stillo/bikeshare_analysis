@@ -1,8 +1,8 @@
 id,active_date,name,district,total_checkouts,total_docks,trips_per_dock,trips_per_dock_day,ebs_station,checkouts_rank_per_day,transit_access_score,jobs_access_score,households_access_score,low_income_access_score,public_amenities_access_score,bike_infra_score,retail_entertainment_access_score,existing_bikeshare_access_score,total_score
 88,2025-03-31,30th_and_whitis,3,1481,11,134.63636363636363,0.7397602397602397,0,,2.0,1.0,3.0,2.0,3.0,3.0,2.0,3.0,19.0
-50,2025-09-16,e_5th_and_shady__at__eastside_bus_plaza,9,15,11,1.3636363636363635,0.0909090909090909,1,,3.0,1.0,1.0,2.0,1.0,3.0,3.0,3.0,17.0
+50,2025-09-16,e_5th_and_shady_at_eastside_bus_plaza,9,15,11,1.3636363636363635,0.0909090909090909,1,,3.0,1.0,1.0,2.0,1.0,3.0,3.0,3.0,17.0
 94,2026-01-06,e_7th_and_pleasant_valley,,,11,0.0,0.0,1,,3.0,3.0,1.0,2.0,3.0,1.0,3.0,2.0,18.0
 91,2025-11-12,e_8th_and_san_jacinto,3,,15,0.0,0.0,1,,3.0,3.0,1.0,2.0,3.0,3.0,1.0,3.0,19.0
 90,2025-11-12,e_cesar_chavez_and_pleasant_valley,9,,17,0.0,0.0,1,,3.0,2.0,3.0,3.0,3.0,3.0,2.0,3.0,22.0
-22,2025-07-03,w_4th_and_guadalupe__at__republic_square,9,490,11,44.54545454545455,0.494949494949495,0,,3.0,3.0,3.0,2.0,3.0,2.0,3.0,3.0,22.0
+22,2025-07-03,w_4th_and_guadalupe_at_republic_square,9,490,11,44.54545454545455,0.494949494949495,0,,3.0,3.0,3.0,2.0,3.0,2.0,3.0,3.0,22.0
 93,2025-12-31,webberville_and_northwestern,1,,11,0.0,0.0,0,,1.0,2.0,3.0,3.0,3.0,3.0,3.0,3.0,21.0

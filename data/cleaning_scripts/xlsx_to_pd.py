@@ -34,6 +34,8 @@ def clean_station_rubric(df: pd.DataFrame) -> pd.DataFrame:
             .str.replace("/", " and ", regex=False)
             .str.replace("@", " at ", regex=False)
             .str.replace(" ", "_", regex=False)
+            .str.replace(r"_+", "_", regex=True)  # collapse multiple underscores
+            .str.strip("_")  # remove leading/trailing underscores
         )
 
     # 2) Rename long columns
@@ -122,6 +124,17 @@ df = clean_station_rubric(raw_df)
 
 current_stat_df = df.iloc[:72].copy()
 projected_stat_df = df.iloc[72:].copy()
+
+# %%
+coords_file_path = "../raw/scoring/kiosk_locations.csv"
+coords_df = pd.read_csv(coords_file_path)
+
+coords_df.columns = ["name", "lat", "lon"]
+
+coords_df = clean_station_rubric(coords_df)
+
+coords_df["Kiosk Name"]
+
 
 # %%
 out_dir = Path("../cleaned/scoring")
