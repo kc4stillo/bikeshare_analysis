@@ -121,7 +121,7 @@ raw_df = pd.read_excel(file_path, header=2)
 df = clean_station_rubric(raw_df)
 
 current_stat_df = df.iloc[:72].copy()
-projected_stat_df = df.iloc[74:81].copy()
+projected_stat_df = df.iloc[72:].copy()
 
 # %%
 out_dir = Path("../cleaned/scoring")
