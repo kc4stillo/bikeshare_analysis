@@ -1,5 +1,6 @@
 # %% [markdown]
 # # CapMetro Bikeshare – Clean names, join scoring + coords, and manually patch missing coordinates
+# NOTE: EAST 8TH & TRINITY + 7/pleasant valley COORDAINATES ARE ESTIMATES. NOT EXACT!!!
 
 # %%
 import re
@@ -200,6 +201,8 @@ manual_coords = pd.DataFrame(
         ("neal/webberville", 30.267506, -97.707997),
         ("northwestern/webberville", 30.263061, -97.713433),
         ("one texas", 30.257653, -97.74898),
+        ("7/pleasant valley", 30.260097959013496, -97.70949592069434),
+        ("8/trinity", 30.26895625697814, -97.7386856328997),
     ],
     columns=["name_clean", "lat_manual", "lon_manual"],
 )
@@ -268,9 +271,6 @@ joined["on_UT"] = joined["name"].isin(ut_stations).astype(int)
 
 
 # %%
-# drop checkout rankings
-joined = joined.drop("Checkouts Rankings; per day >5=3; 2-5=2; <1=1 ", axis=1)
-
 
 out_path = "../raw/scoring/raw_scores_with_coords.csv"
 joined.to_csv(out_path, index=False)
