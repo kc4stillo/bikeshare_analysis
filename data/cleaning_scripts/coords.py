@@ -240,6 +240,38 @@ print("Still missing coords after manual patch:", len(missing_after_patch))
 print(missing_after_patch["name_clean"].sort_values().tolist())
 
 # %%
+pd.set_option("display.max_rows", None)
+pd.set_option("display.max_columns", None)
+
+# %%
+# fixing ut stations
+# Stations considered "on UT property"
+ut_stations = {
+    "Dean Keeton/Park Place",
+    "Dean Keeton/Robert Dedman Dr",
+    "Dean Keeton/Speedway",
+    "Dean Keeton/Whitis",
+    "E 21st/Speedway @ PCL",
+    "E 23rd/San Jacinto @ DKR Stadium",
+    "Guadalupe/West Mall @ University Co-op",
+    "W 21st/Guadalupe",
+    "W 21st/University",
+    "W 22.5/Rio Grande",
+    "W 22nd/Pearl",
+    "W 23rd/San Gabriel",
+    "W 26th/Nueces",
+    "W 28th/Rio Grande",
+}
+
+# Add binary column: 1 if station name is in the UT set, else 0
+joined["on_UT"] = joined["name"].isin(ut_stations).astype(int)
+
+
+# %%
+# drop checkout rankings
+joined = joined.drop("Checkouts Rankings; per day >5=3; 2-5=2; <1=1 ", axis=1)
+
+
 out_path = "../raw/scoring/raw_scores_with_coords.csv"
 joined.to_csv(out_path, index=False)
 print("Saved:", out_path)
