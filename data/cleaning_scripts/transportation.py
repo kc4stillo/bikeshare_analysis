@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pandas as pd
 
 pd.set_option("display.max_rows", None)
@@ -5,6 +7,35 @@ pd.set_option("display.max_columns", None)
 
 metrobike_stations = pd.read_csv("../raw/scoring/raw_scores_with_coords.csv")
 rail_and_bus = pd.read_csv("../raw/transit/stops.txt")
+
+
+def clean_names(x):
+    """
+    Clean names:
+      - lowercase everything
+      - replace spaces with _
+      - replace / with _and_
+      - strip leading/trailing whitespace
+      - collapse repeated underscores
+    Works for a string or a pandas Series.
+    """
+    if isinstance(x, pd.Series):
+        s = x.astype("string")
+    else:
+        s = pd.Series([x], dtype="string")
+
+    s = (
+        s.str.strip()
+        .str.lower()
+        .str.replace("/", "_and_", regex=False)
+        .str.replace("@", "_at_", regex=False)
+        .str.replace(r"\s+", "_", regex=True)
+        .str.replace(r"_+", "_", regex=True)
+        .str.strip("_")
+    )
+
+    return s if isinstance(x, pd.Series) else s.iloc[0]
+
 
 # %%
 rail_stations = {
@@ -41,5 +72,9 @@ transportation = pd.concat(
     ignore_index=True,
 )
 
-# %%
-# TODO: CREATE CLEANING SCRIPT FOR TRANSPORTATION NAME COL
+transportation["name"] = clean_names(transportation["name"])
+
+out_dir = Path("../cleaned/transportation")
+out_dir.mkdir(parents=True, exist_ok=True)
+
+transportation.to_csv(out_dir / "transportation.csv", index=False)
