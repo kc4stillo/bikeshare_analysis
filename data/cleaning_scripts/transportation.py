@@ -9,12 +9,15 @@ metrobike_stations = pd.read_csv("../raw/scoring/raw_scores_with_coords.csv")
 rail_and_bus = pd.read_csv("../raw/transit/stops.txt")
 
 
+# %%
 def clean_names(x):
     """
     Clean names:
+      - remove quotes (straight + curly)
       - lowercase everything
       - replace spaces with _
       - replace / with _and_
+      - replace @ with _at_
       - strip leading/trailing whitespace
       - collapse repeated underscores
     Works for a string or a pandas Series.
@@ -26,7 +29,17 @@ def clean_names(x):
 
     s = (
         s.str.strip()
+        # remove quotations
+        .str.replace('"', "", regex=False)
+        .str.replace("'", "", regex=False)
+        .str.replace("“", "", regex=False)
+        .str.replace("”", "", regex=False)
+        .str.replace("‘", "", regex=False)
+        .str.replace("’", "", regex=False)
+        .str.replace(".", "", regex=False)
+        # your existing rules
         .str.lower()
+        .str.replace("&", "_and_", regex=False)
         .str.replace("/", "_and_", regex=False)
         .str.replace("@", "_at_", regex=False)
         .str.replace(r"\s+", "_", regex=True)

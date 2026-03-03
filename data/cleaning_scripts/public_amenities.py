@@ -12,6 +12,48 @@ libraries = pd.read_csv("../raw/amenities/library_locations.csv")
 recs = pd.read_csv("../raw/amenities/rec_center_locations.csv")
 parks = pd.read_csv("../raw/amenities/park_borders.csv")
 
+
+# %%
+def clean_names(x):
+    """
+    Clean names:
+      - remove quotes (straight + curly)
+      - lowercase everything
+      - replace spaces with _
+      - replace / with _and_
+      - replace @ with _at_
+      - strip leading/trailing whitespace
+      - collapse repeated underscores
+    Works for a string or a pandas Series.
+    """
+    if isinstance(x, pd.Series):
+        s = x.astype("string")
+    else:
+        s = pd.Series([x], dtype="string")
+
+    s = (
+        s.str.strip()
+        # remove quotations
+        .str.replace('"', "", regex=False)
+        .str.replace("'", "", regex=False)
+        .str.replace("“", "", regex=False)
+        .str.replace("”", "", regex=False)
+        .str.replace("‘", "", regex=False)
+        .str.replace("’", "", regex=False)
+        .str.replace(".", "", regex=False)
+        # your existing rules
+        .str.lower()
+        .str.replace("&", "_and_", regex=False)
+        .str.replace("/", "_and_", regex=False)
+        .str.replace("@", "_at_", regex=False)
+        .str.replace(r"\s+", "_", regex=True)
+        .str.replace(r"_+", "_", regex=True)
+        .str.strip("_")
+    )
+
+    return s if isinstance(x, pd.Series) else s.iloc[0]
+
+
 # %%
 # extract lat/long from pools
 coords = (
@@ -133,6 +175,10 @@ recs["amenity"] = "rec_center"
 recs
 # %%
 amenities = pd.concat([pools, recs, libraries])
+
+# standardize names
+amenities["name"] = clean_names(amenities["name"])
+
 amenities.head()
 
 # %%
@@ -155,7 +201,11 @@ parks_m["area_acres"] = parks_m["area_m2"] / 4046.86
 parks = parks_m[parks_m["area_acres"] > 15].copy()[["LOCATION_NAME", "geometry"]]
 parks.columns = ["name", "geometry"]
 
+# standardize names
+parks["name"] = clean_names(parks["name"])
+
 parks
+
 
 # %%
 out_dir = Path("../../cleaned/amenities")
