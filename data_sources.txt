@@ -24,3 +24,6 @@ metrobike stations:
 -- map of stations:
   -- https://www.google.com/maps/d/u/0/viewer?ll=30.260061565504515%2C-97.70980357423973&z=19&mid=1Q3RkqdrNazvdq3LUC-EypgANXgsEQUs
 
+housing:
+-- gis and csv:
+  -- Jonathan Schroeder, David Van Riper, Steven Manson, Katherine Knowles, Tracy Kugler, Finn Roberts, and Steven Ruggles. IPUMS National Historical Geographic Information System: Version 20.0 [dataset]. Minneapolis, MN: IPUMS, 2025. https://doi.org/10.18128/D050.V20.0 (Accessed March 5, 2026.)
