@@ -2,8 +2,8 @@ import pandas as pd
 
 TRAVIS_FIPS = 48453  # Travis County, TX
 
-df1 = pd.read_csv("../raw/jobs/blocks.csv", dtype={"tabblk2020": str})
-df2 = pd.read_csv("../raw/jobs/jobs.csv", dtype={"w_geocode": str})
+df1 = pd.read_csv("../raw/employment/blocks.csv", dtype={"tabblk2020": str})
+df2 = pd.read_csv("../raw/employment/jobs_per_block.csv", dtype={"w_geocode": str})
 
 # Keep only Travis County blocks (crosswalk has county)
 xwalk_travis = df1.loc[
@@ -24,4 +24,4 @@ print(jobs_blocks_travis.head())
 jobs_blocks_travis = jobs_blocks_travis[["C000", "blklatdd", "blklondd"]]
 jobs_blocks_travis.columns = ["job_count", "lat", "lon"]
 
-jobs_blocks_travis.to_csv("../cleaned/jobs.csv", index=False)
+jobs_blocks_travis.to_csv("../cleaned/jobs/jobs.csv", index=False)
