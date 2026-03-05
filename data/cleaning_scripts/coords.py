@@ -269,9 +269,9 @@ ut_stations = {
 # Add binary column: 1 if station name is in the UT set, else 0
 joined["on_UT"] = joined["name"].isin(ut_stations).astype(int)
 
+joined = joined[["name", "name_clean", "Kiosk Name", "lat", "lon"]]
 
 # %%
-
 out_path = "../raw/scoring/raw_scores_with_coords.csv"
 joined.to_csv(out_path, index=False)
 print("Saved:", out_path)
