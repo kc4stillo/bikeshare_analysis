@@ -27,3 +27,7 @@ metrobike stations:
 housing:
 -- gis and csv:
   -- Jonathan Schroeder, David Van Riper, Steven Manson, Katherine Knowles, Tracy Kugler, Finn Roberts, and Steven Ruggles. IPUMS National Historical Geographic Information System: Version 20.0 [dataset]. Minneapolis, MN: IPUMS, 2025. https://doi.org/10.18128/D050.V20.0 (Accessed March 5, 2026.)
+
+retail:
+-- shops and all that (love this stuff)
+  -- https://osmnx.readthedocs.io/en/stable/
