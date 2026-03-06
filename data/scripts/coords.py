@@ -271,7 +271,9 @@ joined["on_UT"] = joined["name"].isin(ut_stations).astype(int)
 
 joined = joined[["name", "name_clean", "Kiosk Name", "lat", "lon"]]
 
+joined.columns = ["scoring_name", "cleaned_name", "coordinate_name", "lat", "lon"]
+
 # %%
-out_path = "../raw/scoring/raw_scores_with_coords.csv"
+out_path = "../cleaned/coords/semi_cleaned/raw_scores_with_coords.csv"
 joined.to_csv(out_path, index=False)
 print("Saved:", out_path)
