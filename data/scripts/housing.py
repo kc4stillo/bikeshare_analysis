@@ -77,4 +77,4 @@ m
 housing = housing[["AUUDE002", "geometry"]]
 housing.columns = ["count", "geometry"]
 
-housing.to_csv("../cleaned/housing/housing.csv")
+housing.to_csv("../cleaned/housing/housing.csv", index=False)
