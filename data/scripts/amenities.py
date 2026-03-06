@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import geopandas as gpd
 import pandas as pd
 from shapely import wkt
@@ -75,7 +73,7 @@ pools = pools.rename(columns={"Pool Name": "name"})
 pools.columns = pools.columns.str.lower()
 
 # add amenity column
-pools["amenity"] = "pool"
+pools["type"] = "pool"
 
 pools.head()
 
@@ -149,7 +147,7 @@ extra_libraries = pd.DataFrame(
 # --- Concatenate correctly ---
 libraries = pd.concat([public_libraries, extra_libraries], ignore_index=True)
 
-libraries["amenity"] = "library"
+libraries["type"] = "library"
 
 # %%
 # extract lat/long from recs
@@ -170,7 +168,7 @@ recs = recs.rename(columns={"Recreation Centers Name": "name"})
 recs.columns = ["name", "lat", "lon"]
 
 # add amenity column
-recs["amenity"] = "rec_center"
+recs["type"] = "rec_center"
 
 recs
 # %%
@@ -208,8 +206,5 @@ parks
 
 
 # %%
-out_dir = Path("../../cleaned/amenities")
-out_dir.mkdir(parents=True, exist_ok=True)
-
-amenities.to_csv(out_dir / "amenities.csv", index=False)
-parks.to_csv(out_dir / "parks.csv", index=False)
+amenities.to_csv("../cleaned/amenities/amenities.csv", index=False)
+parks.to_csv("../cleaned/amenities/parks.csv", index=False)
