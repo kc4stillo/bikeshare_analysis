@@ -72,3 +72,6 @@ for _, r in housing.iterrows():
     ).add_to(m)
 
 m
+
+# %%
+housing.to_csv("../cleaned/housing/housing.csv")
