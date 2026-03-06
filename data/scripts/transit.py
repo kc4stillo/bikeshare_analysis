@@ -90,4 +90,4 @@ transportation["name"] = clean_names(transportation["name"])
 out_dir = Path("../cleaned/transportation")
 out_dir.mkdir(parents=True, exist_ok=True)
 
-transportation.to_csv(out_dir / "transportation.csv", index=False)
+transportation.to_csv(out_dir / "transit.csv", index=False)
