@@ -143,7 +143,7 @@ def normalize_kiosk_name_v3(x: object) -> str:
 file_path = "../raw/scoring/curr_station_rubric.xlsx"
 scores = pd.read_excel(file_path, header=2)
 
-coords_file_path = "../raw/scoring/kiosk_locations.csv"
+coords_file_path = "../raw/coords/kiosk_locations.csv"
 coords_df = pd.read_csv(coords_file_path)
 coords_df = coords_df[coords_df["Kiosk Status"].astype(str).str.lower() == "active"]
 
