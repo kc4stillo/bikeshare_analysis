@@ -5,7 +5,7 @@ import pandas as pd
 pd.set_option("display.max_rows", None)
 pd.set_option("display.max_columns", None)
 
-metrobike_stations = pd.read_csv("../raw/scoring/raw_scores_with_coords.csv")
+# metrobike_stations = pd.read_csv("../cleaned/coords/coords.csv")
 rail_and_bus = pd.read_csv("../raw/transit/stops.txt")
 
 
@@ -73,21 +73,9 @@ rail_and_bus = rail_and_bus[["stop_name", "stop_lat", "stop_lon", "type"]]
 
 rail_and_bus.columns = ["name", "lat", "lon", "type"]
 
-# %%
-metrobike_stations = metrobike_stations[["name", "lat", "lon"]]
-metrobike_stations["type"] = "bike"
-metrobike_stations.columns = ["name", "lat", "lon", "type"]
+rail_and_bus["name"] = clean_names(rail_and_bus["name"])
 
-# %%
-transportation = pd.concat(
-    [metrobike_stations, rail_and_bus[["name", "lat", "lon", "type"]]],
-    axis=0,
-    ignore_index=True,
-)
-
-transportation["name"] = clean_names(transportation["name"])
-
-out_dir = Path("../cleaned/transportation")
+out_dir = Path("../cleaned/transit")
 out_dir.mkdir(parents=True, exist_ok=True)
 
-transportation.to_csv(out_dir / "transit.csv", index=False)
+rail_and_bus.to_csv(out_dir / "transit.csv", index=False)

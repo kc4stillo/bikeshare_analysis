@@ -23,21 +23,6 @@ def clean_station_rubric(df: pd.DataFrame) -> pd.DataFrame:
     # Normalize column labels
     df.columns = [str(c).strip() for c in df.columns]
 
-    # 1) Standardize station name
-
-    if "name" in df.columns:
-        df["name"] = (
-            df["name"]
-            .astype("string")
-            .str.strip()
-            .str.lower()
-            .str.replace("/", " and ", regex=False)
-            .str.replace("@", " at ", regex=False)
-            .str.replace(" ", "_", regex=False)
-            .str.replace(r"_+", "_", regex=True)  # collapse multiple underscores
-            .str.strip("_")  # remove leading/trailing underscores
-        )
-
     # 2) Rename long columns
     rename_map = {
         "Active Date": "active_date",
@@ -126,19 +111,8 @@ current_stat_df = df.iloc[:72].copy()
 projected_stat_df = df.iloc[72:].copy()
 
 # %%
-coords_file_path = "../raw/scoring/kiosk_locations.csv"
-coords_df = pd.read_csv(coords_file_path)
-
-coords_df.columns = ["name", "lat", "lon"]
-
-coords_df = clean_station_rubric(coords_df)
-
-coords_df["Kiosk Name"]
-
-
-# %%
 out_dir = Path("../cleaned/scoring")
 out_dir.mkdir(parents=True, exist_ok=True)
 
-current_stat_df.to_csv(out_dir / "current_stations_cleaned.csv", index=False)
-projected_stat_df.to_csv(out_dir / "projected_stations_cleaned.csv", index=False)
+current_stat_df.to_csv(out_dir / "current_stations.csv", index=False)
+projected_stat_df.to_csv(out_dir / "projected_stations.csv", index=False)
