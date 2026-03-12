@@ -7,15 +7,24 @@ import pandas as pd
 # ============================================================
 prefix = "../../data/cleaned/"
 
-amenities = pd.read_csv(prefix + "amenities/amenities.csv")  # name, lat, lon, type
-coords = pd.read_csv(
-    prefix + "coords/coords.csv"
-)  # scoring_name, cleaned_name, coordinate_name, lat, lon
-jobs = pd.read_csv(prefix + "jobs/jobs.csv")  # job_count, lat, lon
-retail = pd.read_csv(
-    prefix + "retail/retail.csv"
-)  # name, lat, lon, type or type1/type2
-scoring = pd.read_csv(prefix + "scoring/curr_stations_scored.csv")  # optional
+amenities = pd.read_csv(prefix + "amenities/amenities.csv")
+coords = pd.read_csv(prefix + "coords/coords.csv")
+jobs = pd.read_csv(prefix + "jobs/jobs.csv")
+retail = pd.read_csv(prefix + "retail/retail.csv")
+scoring = pd.read_csv(prefix + "scoring/curr_stations_scored.csv")
+
+# ============================================================
+# Tunable styling
+# ============================================================
+MARKER_OPACITY = 0.45  # outline opacity
+FILL_OPACITY = 0.25  # fill opacity
+
+# Effective categorical palette
+COLOR_STATIONS = "#377eb8"  # blue
+COLOR_AMENITIES = "#4daf4a"  # green
+COLOR_RETAIL = "#984ea3"  # purple
+COLOR_JOBS = "#ff7f00"  # orange
+COLOR_SCORED = "#e41a1c"  # red
 
 
 # ============================================================
@@ -39,7 +48,7 @@ def retail_type_str(row):
 
 
 # ============================================================
-# Base map (center on station coords)
+# Base map
 # ============================================================
 coords["lat"] = pd.to_numeric(coords["lat"], errors="coerce")
 coords["lon"] = pd.to_numeric(coords["lon"], errors="coerce")
@@ -53,72 +62,82 @@ m = folium.Map(
 )
 
 # ============================================================
-# Layers (NO clustering => no spiderfy)
-# ============================================================
-
-# ------------------------------------------------------------
 # MetroBike Stations
-# ------------------------------------------------------------
+# ============================================================
 fg_stations = folium.FeatureGroup(name="MetroBike Stations", show=True)
+
 for _, r in coords.iterrows():
     folium.CircleMarker(
         location=[float(r["lat"]), float(r["lon"])],
         radius=5,
+        color=COLOR_STATIONS,
+        fill=True,
+        fill_color=COLOR_STATIONS,
+        opacity=MARKER_OPACITY,
+        fill_opacity=FILL_OPACITY,
         popup=folium.Popup(
             f"<b>{r.get('scoring_name', '')}</b><br>"
             f"cleaned_name: {r.get('cleaned_name', '')}<br>"
             f"coordinate_name: {r.get('coordinate_name', '')}",
             max_width=350,
         ),
-        fill=True,
-        fill_opacity=0.85,
-        opacity=0.9,
     ).add_to(fg_stations)
+
 fg_stations.add_to(m)
 
-# ------------------------------------------------------------
-# Public Amenities (points)
-# ------------------------------------------------------------
+# ============================================================
+# Public Amenities
+# ============================================================
 fg_amen = folium.FeatureGroup(name="Public Amenities (points)", show=False)
+
 for _, r in amenities.iterrows():
     lat, lon = safe_float(r.get("lat")), safe_float(r.get("lon"))
     if lat is None or lon is None:
         continue
+
     folium.CircleMarker(
         location=[lat, lon],
         radius=3,
+        color=COLOR_AMENITIES,
+        fill=True,
+        fill_color=COLOR_AMENITIES,
+        opacity=MARKER_OPACITY,
+        fill_opacity=FILL_OPACITY,
         popup=folium.Popup(
             f"{r.get('name', '')}<br>type: {r.get('type', '')}", max_width=350
         ),
-        fill=True,
-        fill_opacity=0.5,
-        opacity=0.6,
     ).add_to(fg_amen)
+
 fg_amen.add_to(m)
 
-# ------------------------------------------------------------
-# Retail / Entertainment (points)
-# ------------------------------------------------------------
+# ============================================================
+# Retail / Entertainment
+# ============================================================
 fg_retail = folium.FeatureGroup(name="Retail / Entertainment (points)", show=False)
+
 for _, r in retail.iterrows():
     lat, lon = safe_float(r.get("lat")), safe_float(r.get("lon"))
     if lat is None or lon is None:
         continue
+
     folium.CircleMarker(
         location=[lat, lon],
         radius=3,
+        color=COLOR_RETAIL,
+        fill=True,
+        fill_color=COLOR_RETAIL,
+        opacity=MARKER_OPACITY,
+        fill_opacity=FILL_OPACITY,
         popup=folium.Popup(
             f"{r.get('name', '')}<br>{retail_type_str(r)}", max_width=350
         ),
-        fill=True,
-        fill_opacity=0.5,
-        opacity=0.6,
     ).add_to(fg_retail)
+
 fg_retail.add_to(m)
 
-# ------------------------------------------------------------
-# Jobs (CircleMarkers sized by job_count)
-# ------------------------------------------------------------
+# ============================================================
+# Jobs (scaled by job_count)
+# ============================================================
 fg_jobs = folium.FeatureGroup(name="Jobs (sized by job_count)", show=False)
 
 jobs = jobs.copy()
@@ -137,19 +156,23 @@ def scale_px(x, min_px=2, max_px=12):
 
 for _, r in jobs.iterrows():
     jc = float(r["job_count"])
+
     folium.CircleMarker(
         location=[float(r["lat"]), float(r["lon"])],
         radius=scale_px(jc),
-        popup=folium.Popup(f"Jobs: {int(jc):,}", max_width=250),
+        color=COLOR_JOBS,
         fill=True,
-        fill_opacity=0.35,
-        opacity=0.6,
+        fill_color=COLOR_JOBS,
+        opacity=MARKER_OPACITY,
+        fill_opacity=FILL_OPACITY,
+        popup=folium.Popup(f"Jobs: {int(jc):,}", max_width=250),
     ).add_to(fg_jobs)
+
 fg_jobs.add_to(m)
 
-# ------------------------------------------------------------
-# Optional: Scored Stations (if scoring has lat/lon)
-# ------------------------------------------------------------
+# ============================================================
+# Scored Stations
+# ============================================================
 if "lat" in scoring.columns and "lon" in scoring.columns:
     fg_score = folium.FeatureGroup(name="Scored Stations", show=False)
 
@@ -170,24 +193,26 @@ if "lat" in scoring.columns and "lon" in scoring.columns:
             if popup_cols
             else None
         )
+
         folium.CircleMarker(
             location=[float(r["lat"]), float(r["lon"])],
             radius=6,
-            popup=folium.Popup(popup, max_width=350) if popup else None,
+            color=COLOR_SCORED,
             fill=True,
-            fill_opacity=0.85,
-            opacity=0.9,
+            fill_color=COLOR_SCORED,
+            opacity=MARKER_OPACITY,
+            fill_opacity=FILL_OPACITY,
+            popup=folium.Popup(popup, max_width=350) if popup else None,
         ).add_to(fg_score)
 
     fg_score.add_to(m)
 
-# ------------------------------------------------------------
+# ============================================================
 # Layer control + output
-# ------------------------------------------------------------
+# ============================================================
 folium.LayerControl(collapsed=False).add_to(m)
 
-# Display in notebook
 m
 
-# Or save:
+# Optional save
 # m.save("capmetro_layers_map_points_only.html")
