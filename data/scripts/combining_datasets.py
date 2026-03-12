@@ -1,6 +1,8 @@
 # %%
 import geopandas as gpd
+import numpy as np
 import pandas as pd
+from shapely import wkt
 
 pd.set_option("display.max_rows", 100)
 
@@ -201,8 +203,6 @@ scores_and_coords.drop("amenities_within_275m", axis=1, inplace=True)
 # -----------------------------
 # Park area within 275m
 # -----------------------------
-from shapely import wkt
-
 stations = scores_and_coords.copy()
 parks_polys = parks.copy()
 
@@ -290,11 +290,6 @@ scores_and_coords["retail_nearby"] = (
 )
 
 scores_and_coords.drop("retail_within_275m", axis=1, inplace=True)
-
-# %%
-import geopandas as gpd
-import numpy as np
-import pandas as pd
 
 # %%
 # -----------------------------
