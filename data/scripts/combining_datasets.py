@@ -1,10 +1,13 @@
 # %%
+import re
+
 import geopandas as gpd
 import numpy as np
 import pandas as pd
 from shapely import wkt
 
 pd.set_option("display.max_rows", 100)
+pd.set_option("display.max_columns", 100)
 
 # %%
 prefix = "../../data/cleaned/"
@@ -19,9 +22,6 @@ transit = pd.read_csv(prefix + "transit/transit.csv")
 parks = pd.read_csv(prefix + "amenities/parks.csv")
 
 scores_and_coords = scores.merge(coords, left_on="name", right_on="scoring_name")
-scores_and_coords = scores_and_coords[
-    ["id", "active_date", "name", "district", "total_docks", "lat", "lon"]
-]
 
 # %%
 # -----------------------------
@@ -81,7 +81,6 @@ scores_and_coords["transit_nearby"] = (
 
 scores_and_coords.drop("transit_stops_within_275m", axis=1, inplace=True)
 
-# %%
 # %%
 # -----------------------------
 # Jobs within 275m
@@ -365,3 +364,153 @@ dist_features = dist_features.reset_index().rename(columns={"index": "id"})
 scores_and_coords = scores_and_coords.merge(dist_features, on="id", how="left")
 
 scores_and_coords.head()
+
+scores_and_coords
+
+# %%
+ut_names = [
+    "Dean Keeton/Park Place",
+    "Dean Keeton/Robert Dedman Dr",
+    "Dean Keeton/Speedway",
+    "Dean Keeton/Whitis",
+    "E 21st/Speedway @ PCL",
+    "E 23rd/San Jacinto @ DKR Stadium",
+    "Guadalupe/West Mall @ University Co-op",
+    "W 21st/Guadalupe",
+    "W 21st/University",
+    "W 22.5/Rio Grande",
+    "W 22nd/Pearl",
+    "W 23rd/San Gabriel",
+    "W 26th/Nueces",
+    "W 28th/Rio Grande",
+]
+
+scores_and_coords["is_ut"] = scores_and_coords["name"].isin(ut_names).astype(int)
+
+
+# %%
+def to_snake_case(text):
+    if pd.isna(text):
+        return text
+
+    # lowercase first
+    text = str(text).lower()
+
+    # replace any non-alphanumeric character(s) with underscore
+    text = re.sub(r"[^a-z0-9]+", "_", text)
+
+    # remove leading/trailing underscores
+    text = re.sub(r"^_+|_+$", "", text)
+
+    return text
+
+
+# apply to your column
+scores_and_coords["name"] = scores_and_coords["name"].apply(to_snake_case)
+
+# %%
+scores_and_coords = scores_and_coords[
+    [
+        "id",
+        "active_date",
+        "name",
+        "district",
+        "total_checkouts",
+        "total_docks",
+        "trips_per_dock",
+        "ebs_station",
+        "transit_nearby",
+        "jobs_nearby",
+        "housing_nearby",
+        "low_income_access_score",
+        "amenities_nearby",
+        "park_area_nearby",
+        "bike_infra_score",
+        "retail_nearby",
+        "nearest_station_dist_m",
+        "stations_within_500m",
+        "stations_within_1000m",
+        "avg_dist_3_nearest_m",
+        "is_ut",
+        "lat",
+        "lon",
+    ]
+]
+
+
+amenities.head()
+# name	lat	lon	type
+# 0	NaN	30.141048	-97.827575	amenity_post_office
+# 1	Walgreens	30.174187	-97.822898	amenity_pharmacy
+# 2	Cornerstone Hospital Austin	30.311892	-97.743327	amenity_hospital
+# 3	North Austin Optimist Baseball Fields	30.345827	-97.720758	leisure_sports_centre
+# 4	Austin Regional Clinic	30.446372	-97.805730	amenity_clinic
+
+parks.head()
+# name	geometry
+# 0	scofield_farms_neighborhood_park	MULTIPOLYGON (((626537.566663308 3365536.07899...
+# 1	bartholomew_district_park	MULTIPOLYGON (((625454.1042703979 3353271.8536...
+# 2	marble_creek_greenbelt	MULTIPOLYGON (((621952.7752310712 3337418.2165...
+# 3	zilker_metro_park	MULTIPOLYGON (((618728.586566374 3349230.93388...
+# 4	lower_bull_creek_greenbelt	MULTIPOLYGON (((618519.9013914722 3361899.4991
+
+coords.head()
+# scoring_name	cleaned_name	coordinate_name	lat	lon
+# 0	Barton Springs Pool	barton springs pool	Barton Springs Pool	30.264520	-97.771200
+# 1	Barton Springs/Azie Morton	azie morton/barton springs	NaN	30.261882	-97.768977
+# 2	Barton Springs/Bouldin@ Palmer Auditorium	barton springs/bouldin	NaN	30.259660	-97.753445
+# 3	Barton Springs/Kinney	barton springs/kinney	Barton Springs @ Kinney Ave	30.262000	-97.761180
+# 4	Cesar Chavez/Congress	cesar chavez/congress	Congress & Cesar Chavez	30.263320	-97.745080
+
+
+housing.head()
+# count	lat	lon
+# 0	542	30.323260	-97.747749
+# 1	605	30.328906	-97.756538
+# 2	431	30.315101	-97.751389
+# 3	1010	30.311923	-97.753655
+# 4	710	30.334287	-97.769566
+
+
+jobs.head()
+# 	job_count	lat	lon
+# 0	40	30.334208	-97.755003
+# 1	55	30.336065	-97.755197
+# 2	4	30.326063	-97.747348
+# 3	99	30.326369	-97.749075
+# 4	11	30.321450	-97.748465
+
+
+retail.head()
+# name	lat	lon	type
+# 0	South Congress Bat Colony	30.259127	-97.746370	tourism_attraction
+# 1	Santa Rita No. 1 Oil Well	30.280025	-97.734710	tourism_attraction
+# 2	The Elephant Room	30.265623	-97.743498	amenity_bar
+# 3	The Hideout Theater	30.268571	-97.742226	amenity_theatre
+# 4	Starbucks	30.268267	-97.742970	amenity_cafe
+
+
+scores.head()
+# id	active_date	name	district	total_checkouts	total_docks	trips_per_dock	trips_per_dock_day	ebs_station	checkouts_rank_per_day	transit_access_score	jobs_access_score	households_access_score	low_income_access_score	public_amenities_access_score	bike_infra_score	retail_entertainment_access_score	existing_bikeshare_access_score	total_score
+# 0	36	2024-07-24	Barton Springs Pool	8	2541	11	231.000000	0.641667	0	1.0	2.0	1.0	1.0	1.0	3.0	2.0	3.0	3.0	17.0
+# 1	39	2024-11-14	Barton Springs/Azie Morton	9	2389	15	159.266667	0.442407	1	2.0	2.0	3.0	2.0	1.0	2.0	2.0	3.0	3.0	20.0
+# 2	37	2024-07-24	Barton Springs/Bouldin@ Palmer Auditorium	9	3425	15	228.333333	0.634259	0	2.0	3.0	2.0	2.0	1.0	3.0	3.0	3.0	3.0	22.0
+# 3	38	2024-11-14	Barton Springs/Kinney	9	1982	11	180.181818	0.500505	0	1.0	3.0	3.0	2.0	1.0	2.0	3.0	3.0	3.0	21.0
+# 4	41	2024-11-14	Cesar Chavez/Congress	9	2711	11	246.454545	0.684596	0	2.0	3.0	3.0	2.0	1.0	1.0	3.0	2.0	3.0	20.0
+
+transit.head()
+# name	lat	lon	type
+# 0	riverside_and_burton	30.240341	-97.727308	bus
+# 1	2237_riverside_and_willow_creek	30.238275	-97.726015	bus
+# 2	2507_riverside_and_pleasant_valley	30.233867	-97.723760	bus
+# 3	4411_oltorf_and_huntwick	30.226619	-97.726260	bus
+# 4	2401_wickersham_and_oltorf	30.226039	-97.723488	bus
+
+
+scores_and_coords.head()
+# 	id	active_date	name	district	total_checkouts	total_docks	trips_per_dock	ebs_station	transit_nearby	jobs_nearby	housing_nearby	low_income_access_score	amenities_nearby	park_area_nearby	bike_infra_score	retail_nearby	nearest_station_dist_m	stations_within_500m	stations_within_1000m	avg_dist_3_nearest_m	is_ut	lat	lon
+# 0	36	2024-07-24	Barton Springs Pool	8	2541	11	231.000000	0	0	34	0	1.0	2	235271	2.0	3	376.406098	3	3	406.615143	0	30.264520	-97.771200
+# 1	39	2024-11-14	Barton Springs/Azie Morton	9	2389	15	159.266667	1	0	40	0	1.0	6	116251	2.0	1	379.736553	2	4	441.649726	0	30.261882	-97.768977
+# 2	37	2024-07-24	Barton Springs/Bouldin@ Palmer Auditorium	9	3425	15	228.333333	0	4	3647	993	1.0	2	112716	3.0	5	415.522489	1	8	563.327378	0	30.259660	-97.753445
+# 3	38	2024-11-14	Barton Springs/Kinney	9	1982	11	180.181818	0	3	819	0	1.0	8	697	3.0	15	595.666914	0	5	792.020875	0	30.262000	-97.761180
+# 4	41	2024-11-14	Cesar Chavez/Congress	9	2711	11	246.454545	0	3	6387	0	1.0	7	6908	3.0	34	196.476819	3	14	292.268948	0	30.263320	-97.745080
