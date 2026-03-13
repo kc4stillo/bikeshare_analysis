@@ -516,4 +516,6 @@ scores_and_coords.head()
 # 4	41	2024-11-14	Cesar Chavez/Congress	9	2711	11	246.454545	0	3	6387	0	1.0	7	6908	3.0	34	196.476819	3	14	292.268948	0	30.263320	-97.745080
 
 # %%
-scores_and_coords.to_csv("../../cleaned/combined_datasets/combined_dataset_v1.csv")
+scores_and_coords.to_csv(
+    "../../cleaned/combined_datasets/combined_dataset_v1.csv", index=False
+)
