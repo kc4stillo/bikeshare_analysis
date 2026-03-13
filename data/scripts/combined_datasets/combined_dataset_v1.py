@@ -10,7 +10,7 @@ pd.set_option("display.max_rows", 100)
 pd.set_option("display.max_columns", 100)
 
 # %%
-prefix = "../../data/cleaned/"
+prefix = "../../cleaned/"
 
 amenities = pd.read_csv(prefix + "amenities/amenities.csv")
 coords = pd.read_csv(prefix + "coords/coords.csv")
@@ -514,3 +514,6 @@ scores_and_coords.head()
 # 2	37	2024-07-24	Barton Springs/Bouldin@ Palmer Auditorium	9	3425	15	228.333333	0	4	3647	993	1.0	2	112716	3.0	5	415.522489	1	8	563.327378	0	30.259660	-97.753445
 # 3	38	2024-11-14	Barton Springs/Kinney	9	1982	11	180.181818	0	3	819	0	1.0	8	697	3.0	15	595.666914	0	5	792.020875	0	30.262000	-97.761180
 # 4	41	2024-11-14	Cesar Chavez/Congress	9	2711	11	246.454545	0	3	6387	0	1.0	7	6908	3.0	34	196.476819	3	14	292.268948	0	30.263320	-97.745080
+
+# %%
+scores_and_coords.to_csv("../../cleaned/combined_datasets/combined_dataset_v1.csv")
