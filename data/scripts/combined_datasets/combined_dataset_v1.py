@@ -517,5 +517,72 @@ scores_and_coords.head()
 
 # %%
 scores_and_coords.to_csv(
-    "../../cleaned/combined_datasets/combined_dataset_v1.csv", index=False
+    "../../cleaned/combined_datasets/v1/combined_dataset_v1.csv", index=False
 )
+
+# %%
+import pandas as pd
+from sklearn.preprocessing import StandardScaler
+
+# copy your dataframe
+df = scores_and_coords.copy()
+
+# ----------------------------
+# 1. choose target
+# ----------------------------
+target = "trips_per_dock"  # or "total_checkouts"
+
+# ----------------------------
+# 3. columns to drop from X
+# ----------------------------
+drop_cols = ["id", "active_date", "total_checkouts", "name", "active_date", "district"]
+
+# ----------------------------
+# 4. columns to leave alone
+# ----------------------------
+binary_cols = ["ebs_station", "is_ut", "target"]
+
+# ordinal scores: can leave as-is or standardize
+ordinal_cols = ["low_income_access_score", "bike_infra_score"]
+
+# lat/lon: optional
+coord_cols = ["lat", "lon"]
+
+# ----------------------------
+# 5. columns to standardize
+# ----------------------------
+scale_cols = [
+    "transit_nearby",
+    "jobs_nearby",
+    "housing_nearby",
+    "amenities_nearby",
+    "park_area_nearby",
+    "retail_nearby",
+    "nearest_station_dist_m",
+    "stations_within_500m",
+    "stations_within_1000m",
+    "avg_dist_3_nearest_m",
+]
+
+# if you want to standardize ordinal scores too, add them:
+# scale_cols += ordinal_cols
+
+# if you want to standardize coordinates too, add them:
+# scale_cols += coord_cols
+
+# ----------------------------
+# 6. build X and y
+# ----------------------------
+X = df.drop(columns=drop_cols)
+y = df[target]
+
+# ----------------------------
+# 7. standardize selected columns
+# ----------------------------
+scaler = StandardScaler()
+X_scaled = X.copy()
+X_scaled[scale_cols] = scaler.fit_transform(X[scale_cols])
+
+X_scaled.head()
+
+X_scaled.to_csv("../../cleaned/combined_datasets/v1/ml_dataset_v1.csv", index=False)
