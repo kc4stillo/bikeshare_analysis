@@ -20,7 +20,6 @@ feature_cols = [
     "retail_nearby",
     "nearest_station_dist_m",
     "stations_within_500m",
-    "is_ut",
 ]
 
 X = df[feature_cols]
