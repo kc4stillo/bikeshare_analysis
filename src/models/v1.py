@@ -86,3 +86,76 @@ importance_df = pd.DataFrame(
 
 print("\nFeature Importances:")
 print(importance_df)
+
+# Features to add:
+# dorm proximity
+# campus building density
+# student-serving retail/food
+# major academic/building clusters
+# Land-use mix
+# not just counts of jobs/housing/retail, but whether an area has a balanced mix
+# Transit quality
+# not just stops nearby, but number of routes / high-frequency service
+# Walkability / connectivity
+# intersection density
+# street connectivity
+# block size
+# Temporal/context features
+# semester vs break
+# weekday/weekend
+# season
+# event areas
+
+# INSTEAD OF ACTIVE DATE, PULL DATA FROM PUBLICLY AVALIABLE CSV TO CALCULATE TOTALS
+
+# %%
+# %%
+import matplotlib.pyplot as plt
+import pandas as pd
+
+# %%
+importance_df = pd.DataFrame(
+    {"feature": X.columns, "importance": best_xgb.feature_importances_}
+).sort_values("importance", ascending=True)
+
+# %%
+plt.figure(figsize=(8, 6))
+plt.barh(importance_df["feature"], importance_df["importance"])
+plt.xlabel("Feature Importance")
+plt.ylabel("Feature")
+plt.title("XGBoost Feature Importances")
+plt.tight_layout()
+plt.show()
+
+# %%
+df = pd.read_csv("../../data/cleaned/combined_datasets/v1/ml_dataset_v1.csv")
+
+# only do this if station names are in the file
+# if not, ignore this section
+
+X = df[feature_cols]
+y = df["trips_per_dock"]
+names = df["name"]  # only if this column exists
+
+X_train, X_test, y_train, y_test, names_train, names_test = train_test_split(
+    X, y, names, test_size=0.2, random_state=42
+)
+
+best_xgb.fit(X_train, y_train)
+y_pred = best_xgb.predict(X_test)
+
+plt.figure(figsize=(8, 6))
+plt.scatter(y_test, y_pred, alpha=0.7)
+
+for actual, pred, name in zip(y_test, y_pred, names_test):
+    plt.annotate(name, (actual, pred), fontsize=8, alpha=0.8)
+
+min_val = min(y_test.min(), y_pred.min())
+max_val = max(y_test.max(), y_pred.max())
+plt.plot([min_val, max_val], [min_val, max_val], linestyle="--")
+
+plt.xlabel("Actual trips_per_dock")
+plt.ylabel("Predicted trips_per_dock")
+plt.title("Actual vs Predicted Trips per Dock (XGBoost)")
+plt.tight_layout()
+plt.show()

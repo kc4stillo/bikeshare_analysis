@@ -535,7 +535,7 @@ target = "trips_per_dock"  # or "total_checkouts"
 # ----------------------------
 # 3. columns to drop from X
 # ----------------------------
-drop_cols = ["id", "active_date", "total_checkouts", "name", "active_date", "district"]
+drop_cols = ["id", "active_date", "total_checkouts", "active_date", "district"]
 
 # ----------------------------
 # 4. columns to leave alone
@@ -543,7 +543,7 @@ drop_cols = ["id", "active_date", "total_checkouts", "name", "active_date", "dis
 binary_cols = ["ebs_station", "is_ut", "target"]
 
 # ordinal scores: can leave as-is or standardize
-ordinal_cols = ["low_income_access_score", "bike_infra_score"]
+ordinal_cols = ["name", "low_income_access_score", "bike_infra_score"]
 
 # lat/lon: optional
 coord_cols = ["lat", "lon"]
