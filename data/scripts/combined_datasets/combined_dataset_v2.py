@@ -10,16 +10,18 @@ pd.set_option("display.max_rows", 100)
 pd.set_option("display.max_columns", 100)
 
 # %%
-prefix = "../../cleaned/"
+cleaned_prefix = "../../cleaned/"
+raw_prefix = "../../raw/"
 
-amenities = pd.read_csv(prefix + "amenities/amenities.csv")
-coords = pd.read_csv(prefix + "coords/coords.csv")
-housing = pd.read_csv(prefix + "housing/housing.csv")
-jobs = pd.read_csv(prefix + "jobs/jobs.csv")
-retail = pd.read_csv(prefix + "retail/retail.csv")
-scores = pd.read_csv(prefix + "scoring/current_stations.csv")
-transit = pd.read_csv(prefix + "transit/transit.csv")
-parks = pd.read_csv(prefix + "amenities/parks.csv")
+amenities = pd.read_csv(cleaned_prefix + "amenities/amenities.csv")
+coords = pd.read_csv(cleaned_prefix + "coords/coords.csv")
+housing = pd.read_csv(cleaned_prefix + "housing/housing.csv")
+jobs = pd.read_csv(cleaned_prefix + "jobs/jobs.csv")
+retail = pd.read_csv(cleaned_prefix + "retail/retail.csv")
+scores = pd.read_csv(cleaned_prefix + "scoring/current_stations.csv")
+transit = pd.read_csv(cleaned_prefix + "transit/transit.csv")
+parks = pd.read_csv(cleaned_prefix + "amenities/parks.csv")
+trips = pd.read_csv(raw_prefix + "scoring/tips_per_station.csv")
 
 scores_and_coords = scores.merge(coords, left_on="name", right_on="scoring_name")
 
@@ -158,7 +160,7 @@ scores_and_coords["housing_nearby"] = (
 )
 
 scores_and_coords.drop("housing_within_275m", axis=1, inplace=True)
-# %%
+
 # %%
 # -----------------------------
 # Amenities within 275m
@@ -368,6 +370,9 @@ scores_and_coords.head()
 scores_and_coords
 
 # %%
+scores_and_coords.drop(["total_checkouts", "trips_per_dock"], inplace=True)
+
+# %%
 ut_names = [
     "Dean Keeton/Park Place",
     "Dean Keeton/Robert Dedman Dr",
@@ -388,7 +393,6 @@ ut_names = [
 scores_and_coords["is_ut"] = scores_and_coords["name"].isin(ut_names).astype(int)
 
 
-# %%
 def to_snake_case(text):
     if pd.isna(text):
         return text
