@@ -21,9 +21,10 @@ retail = pd.read_csv(cleaned_prefix + "retail/retail.csv")
 scores = pd.read_csv(cleaned_prefix + "scoring/current_stations.csv")
 transit = pd.read_csv(cleaned_prefix + "transit/transit.csv")
 parks = pd.read_csv(cleaned_prefix + "amenities/parks.csv")
-trips = pd.read_csv(raw_prefix + "scoring/tips_per_station.csv")
 
-scores_and_coords = scores.merge(coords, left_on="name", right_on="scoring_name")
+scores_and_coords = scores.merge(
+    coords, left_on="name", right_on="scoring_name", how="left"
+)
 
 # %%
 # -----------------------------
@@ -369,29 +370,6 @@ scores_and_coords.head()
 
 scores_and_coords
 
-# %%
-scores_and_coords.drop(["total_checkouts", "trips_per_dock"], inplace=True)
-
-# %%
-ut_names = [
-    "Dean Keeton/Park Place",
-    "Dean Keeton/Robert Dedman Dr",
-    "Dean Keeton/Speedway",
-    "Dean Keeton/Whitis",
-    "E 21st/Speedway @ PCL",
-    "E 23rd/San Jacinto @ DKR Stadium",
-    "Guadalupe/West Mall @ University Co-op",
-    "W 21st/Guadalupe",
-    "W 21st/University",
-    "W 22.5/Rio Grande",
-    "W 22nd/Pearl",
-    "W 23rd/San Gabriel",
-    "W 26th/Nueces",
-    "W 28th/Rio Grande",
-]
-
-scores_and_coords["is_ut"] = scores_and_coords["name"].isin(ut_names).astype(int)
-
 
 def to_snake_case(text):
     if pd.isna(text):
@@ -416,10 +394,8 @@ scores_and_coords["name"] = scores_and_coords["name"].apply(to_snake_case)
 scores_and_coords = scores_and_coords[
     [
         "id",
-        "active_date",
         "name",
         "district",
-        "total_checkouts",
         "total_docks",
         "trips_per_dock",
         "ebs_station",
@@ -521,7 +497,7 @@ scores_and_coords.head()
 
 # %%
 scores_and_coords.to_csv(
-    "../../cleaned/combined_datasets/v1/combined_dataset_v1.csv", index=False
+    "../../cleaned/combined_datasets/v2/combined_dataset_v1.csv", index=False
 )
 
 # %%
@@ -539,7 +515,7 @@ target = "trips_per_dock"  # or "total_checkouts"
 # ----------------------------
 # 3. columns to drop from X
 # ----------------------------
-drop_cols = ["id", "active_date", "total_checkouts", "active_date", "district"]
+drop_cols = ["id", "district"]
 
 # ----------------------------
 # 4. columns to leave alone
@@ -589,4 +565,4 @@ X_scaled[scale_cols] = scaler.fit_transform(X[scale_cols])
 
 X_scaled.head()
 
-X_scaled.to_csv("../../cleaned/combined_datasets/v1/ml_dataset_v1.csv", index=False)
+X_scaled.to_csv("../../cleaned/combined_datasets/v2/ml_dataset_v1.csv", index=False)

@@ -164,26 +164,12 @@ name_map = {
 trips_df["name_clean"] = trips_df["name_clean"].replace(name_map)
 
 # --- merge ---
-merged = trips_df.merge(
-    scores,
+merged = scores.merge(
+    trips_df,
     on="name_clean",
-    how="left",  # keep cleaned trips table, attach score/coord info where possible
-    suffixes=("_trips", "_scores"),
+    how="outer",
+    suffixes=("_orig", "_trips"),
 )
-
-# --- final station name ---
-merged["name_final"] = merged["name_scores"].combine_first(merged["name_trips"])
-
-# --- check remaining unmatched rows ---
-unmatched = merged[merged["name_scores"].isna()][["name_trips", "name_clean"]]
-
-print("Remaining unmatched station names:")
-print(unmatched.drop_duplicates().sort_values("name_trips"))
-
-print("\nMerged shape:", merged.shape)
-print(merged.head())
-
-
 # %%
 merged.drop(
     [
@@ -192,7 +178,6 @@ merged.drop(
         "total_checkouts",
         "trips_per_dock",
         "trips_per_dock_day",
-        "name_final",
         "active_date",
     ],
     inplace=True,
@@ -201,7 +186,7 @@ merged.drop(
 
 merged["trips_per_dock"] = merged["trips"] / merged["total_docks"]
 
-merged = merged.rename(columns={"name_scores": "name"})
+merged = merged.rename(columns={"name_orig": "name"})
 
 # reorder columns into a cleaner order
 col_order = [
@@ -210,14 +195,13 @@ col_order = [
     "name",
     "district",
     # station capacity / metadata
-    "total_docks",
-    "ebs_station",
     # usage metrics
     "trips",
+    "total_docks",
     "trips_per_dock",
+    "ebs_station",
     "checkouts_rank_per_day",
     # overall score
-    "total_score",
     # score components
     "transit_access_score",
     "jobs_access_score",
@@ -227,6 +211,7 @@ col_order = [
     "bike_infra_score",
     "retail_entertainment_access_score",
     "existing_bikeshare_access_score",
+    "total_score",
 ]
 
 merged = (
