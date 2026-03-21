@@ -497,7 +497,7 @@ scores_and_coords.head()
 
 # %%
 scores_and_coords.to_csv(
-    "../../cleaned/combined_datasets/v2/combined_dataset_v1.csv", index=False
+    "../../cleaned/combined_datasets/v2/combined_dataset_v2.csv", index=False
 )
 
 # %%
@@ -565,4 +565,4 @@ X_scaled[scale_cols] = scaler.fit_transform(X[scale_cols])
 
 X_scaled.head()
 
-X_scaled.to_csv("../../cleaned/combined_datasets/v2/ml_dataset_v1.csv", index=False)
+X_scaled.to_csv("../../cleaned/combined_datasets/v2/ml_dataset_v2.csv", index=False)

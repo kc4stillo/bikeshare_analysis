@@ -5,7 +5,7 @@ from sklearn.model_selection import GridSearchCV, KFold, cross_val_score
 from xgboost import XGBRegressor
 
 # %%
-df = pd.read_csv("../../data/cleaned/combined_datasets/v1/ml_dataset_v1.csv")
+df = pd.read_csv("../data/cleaned/combined_datasets/v1/ml_dataset_v1.csv")
 
 feature_cols = [
     "total_docks",
@@ -128,7 +128,7 @@ plt.tight_layout()
 plt.show()
 
 # %%
-df = pd.read_csv("../../data/cleaned/combined_datasets/v1/ml_dataset_v1.csv")
+df = pd.read_csv("../data/cleaned/combined_datasets/v1/ml_dataset_v1.csv")
 
 # only do this if station names are in the file
 # if not, ignore this section
