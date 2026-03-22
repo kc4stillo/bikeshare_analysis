@@ -71,57 +71,6 @@ plt.tight_layout()
 plt.show()
 
 # %%
-# 2. Actual vs Predicted
-plt.figure(figsize=(8, 6))
-plt.scatter(y_test_orig, y_pred_orig, s=80, alpha=0.8)
-
-min_val = min(y_test_orig.min(), y_pred_orig.min())
-max_val = max(y_test_orig.max(), y_pred_orig.max())
-plt.plot([min_val, max_val], [min_val, max_val], linestyle="--")
-
-plt.xlabel("Actual trips_per_dock")
-plt.ylabel("Predicted trips_per_dock")
-plt.title("Actual vs Predicted Trips per Dock")
-plt.tight_layout()
-plt.show()
-
-# %%
-# 3. Residual plot
-residuals = y_test_orig - y_pred_orig
-
-plt.figure(figsize=(8, 6))
-plt.scatter(y_pred_orig, residuals, s=80, alpha=0.8)
-plt.axhline(0)
-
-plt.xlabel("Predicted trips_per_dock")
-plt.ylabel("Residual (Actual - Predicted)")
-plt.title("Residual Plot")
-plt.tight_layout()
-plt.show()
-
-# %%
-# 4. Feature importance
-importance = pd.Series(rf_model.feature_importances_, index=X.columns)
-importance = importance.sort_values(ascending=True)
-
-plt.figure(figsize=(10, 8))
-importance.plot(kind="barh")
-plt.title("Random Forest Feature Importance")
-plt.xlabel("Importance")
-plt.tight_layout()
-plt.show()
-
-# %%
-# 5. Distribution of residuals
-plt.figure(figsize=(8, 5))
-plt.hist(residuals, bins=15)
-plt.xlabel("Residual (Actual - Predicted)")
-plt.ylabel("Count")
-plt.title("Distribution of Residuals")
-plt.tight_layout()
-plt.show()
-
-# %%
 # 6. Biggest errors table
 results = pd.DataFrame(
     {
@@ -133,8 +82,23 @@ results = pd.DataFrame(
     }
 ).sort_values("abs_error", ascending=False)
 
-print("\nTop 10 Biggest Errors")
-print(results.head(10))
+print("\nTop 5 Biggest Errors")
+results[:5]
+
+# %%
+# 6. Smallest errors table
+results = pd.DataFrame(
+    {
+        "name": df.loc[X_test.index, "name"],
+        "actual": y_test_orig,
+        "predicted": y_pred_orig,
+        "residual": y_test_orig - y_pred_orig,
+        "abs_error": np.abs(y_test_orig - y_pred_orig),
+    }
+).sort_values("abs_error", ascending=True)
+
+print("\nTop 5 Smallest Errors")
+results[:5]
 
 # %%
 # 7. Top 15 feature importances only
