@@ -99,14 +99,3 @@ results = pd.DataFrame(
 
 print("\nTop 5 Smallest Errors")
 results[:5]
-
-# %%
-# 7. Top 15 feature importances only
-top_importance = importance.sort_values(ascending=False).head(15).sort_values()
-
-plt.figure(figsize=(10, 7))
-top_importance.plot(kind="barh")
-plt.title("Top 15 Random Forest Feature Importances")
-plt.xlabel("Importance")
-plt.tight_layout()
-plt.show()
