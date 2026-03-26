@@ -60,13 +60,10 @@ parks_m = parks_gdf.to_crs("EPSG:26914")
 parks_m["area_m2"] = parks_m.geometry.area
 parks_m["area_acres"] = parks_m["area_m2"] / 4046.86
 
-# Keep only parks larger than 10 acres
-parks = parks_m[parks_m["area_acres"] > 15].copy()[["LOCATION_NAME", "geometry"]]
-parks.columns = ["name", "geometry"]
-
 # standardize names
-parks["name"] = clean_names(parks["name"])
+parks["name"] = clean_names(parks["LOCATION_NAME"])
 
-parks
+parks = parks.drop("LOCATION_NAME", axis=1)
+parks = parks.rename(columns={"the_geom": "geometry"})
 
-parks.to_csv("../cleaned/amenities/parks.csv", index=False)
+parks[["name", "geometry"]].to_csv("../cleaned/amenities/parks.csv", index=False)
