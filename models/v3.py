@@ -7,221 +7,156 @@ from sklearn.model_selection import KFold, cross_validate, train_test_split
 from xgboost import XGBRegressor
 
 # %%
-df = pd.read_csv("../data/cleaned/combined_datasets/v2/ml_dataset_v2.csv")
+df = pd.read_csv("../data/cleaned/combined_datasets/v3/ml_dataset_v3.csv")
 
+# %%
 X = df.drop(columns=["trips_per_dock", "name", "lat", "lon"])
 y = np.log1p(df["trips_per_dock"])
 
+print("X shape:", X.shape)
+print("y shape:", y.shape)
 X.head()
 
 # %%
-kf = KFold(n_splits=5, shuffle=True, random_state=42)
-
-xgb_model = XGBRegressor(
-    n_estimators=100,
+model = XGBRegressor(
+    n_estimators=200,
     max_depth=3,
-    learning_rate=0.1,
-    min_child_weight=5,
-    subsample=1.0,
+    learning_rate=0.05,
+    min_child_weight=3,
+    subsample=0.8,
     colsample_bytree=0.8,
-    random_state=42,
+    reg_alpha=0,
+    reg_lambda=1,
     objective="reg:squarederror",
+    random_state=42,
 )
 
 # %%
-scores = cross_validate(
-    xgb_model,
+cv = KFold(n_splits=5, shuffle=True, random_state=42)
+
+cv_results = cross_validate(
+    model,
     X,
     y,
-    cv=kf,
-    scoring=("r2", "neg_mean_absolute_error", "neg_root_mean_squared_error"),
+    cv=cv,
+    scoring=["r2", "neg_mean_absolute_error", "neg_root_mean_squared_error"],
+    return_train_score=False,
 )
 
-print("Log-target XGBoost CV R² scores:", np.round(scores["test_r2"], 3))
-print("Mean CV R²:", scores["test_r2"].mean().round(3))
-print("Std CV R²:", scores["test_r2"].std().round(3))
-print("Mean MAE:", (-scores["test_neg_mean_absolute_error"].mean()).round(3))
-print("Mean RMSE:", (-scores["test_neg_root_mean_squared_error"].mean()).round(3))
+cv_r2 = cv_results["test_r2"]
+cv_mae = -cv_results["test_neg_mean_absolute_error"]
+cv_rmse = -cv_results["test_neg_root_mean_squared_error"]
+
+print("Log-target XGBoost CV R² scores:", np.round(cv_r2, 3))
+print("Mean CV R²:", round(cv_r2.mean(), 3))
+print("Std CV R²:", round(cv_r2.std(), 3))
+print("Mean MAE:", round(cv_mae.mean(), 3))
+print("Mean RMSE:", round(cv_rmse.mean(), 3))
 
 # %%
-# Fit once on a train/test split so we can make prediction plots
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42
 )
 
-xgb_model.fit(X_train, y_train)
+model.fit(X_train, y_train)
 
-y_pred_log = xgb_model.predict(X_test)
+# %%
+y_pred_log = model.predict(X_test)
 
-# back-transform to original scale
+# back-transform to original units
 y_test_orig = np.expm1(y_test)
 y_pred_orig = np.expm1(y_pred_log)
 
+test_r2 = r2_score(y_test_orig, y_pred_orig)
+test_mae = mean_absolute_error(y_test_orig, y_pred_orig)
+test_rmse = np.sqrt(mean_squared_error(y_test_orig, y_pred_orig))
+
 print("\nFinal Log-Target XGBoost Test Results (original units)")
-print("-" * 50)
-print(f"R²   : {r2_score(y_test_orig, y_pred_orig):.3f}")
-print(f"MAE  : {mean_absolute_error(y_test_orig, y_pred_orig):.3f}")
-print(f"RMSE : {np.sqrt(mean_squared_error(y_test_orig, y_pred_orig)):.3f}")
+print("--------------------------------------------------")
+print("R²   :", round(test_r2, 3))
+print("MAE  :", round(test_mae, 3))
+print("RMSE :", round(test_rmse, 3))
 
 # %%
-# 1. Cross-validation R² by fold
-plt.figure(figsize=(8, 5))
-plt.bar(range(1, len(scores["test_r2"]) + 1), scores["test_r2"])
-plt.xlabel("Fold")
-plt.ylabel("R²")
-plt.title("Log-Target XGBoost CV R² by Fold")
-plt.xticks(range(1, len(scores["test_r2"]) + 1))
+results = pd.DataFrame(
+    {"actual_trips_per_dock": y_test_orig, "predicted_trips_per_dock": y_pred_orig}
+).sort_values("actual_trips_per_dock", ascending=False)
+
+results.head(10)
+
+# %%
+# Feature importance
+importance_df = pd.DataFrame(
+    {"feature": X.columns, "importance": model.feature_importances_}
+).sort_values("importance", ascending=False)
+
+print(importance_df.head(15))
+
+# %%
+plt.figure(figsize=(10, 6))
+plt.barh(
+    importance_df["feature"].head(15)[::-1], importance_df["importance"].head(15)[::-1]
+)
+plt.xlabel("Feature Importance")
+plt.ylabel("Feature")
+plt.title("Top 15 XGBoost Feature Importances")
 plt.tight_layout()
 plt.show()
 
 # %%
-# Biggest errors table
-results = pd.DataFrame(
-    {
-        "name": df.loc[X_test.index, "name"],
-        "actual": y_test_orig,
-        "predicted": y_pred_orig,
-        "residual": y_test_orig - y_pred_orig,
-        "abs_error": np.abs(y_test_orig - y_pred_orig),
-    }
-).sort_values("abs_error", ascending=False)
+# Actual vs Predicted scatterplot
+plt.figure(figsize=(8, 6))
+plt.scatter(results["actual_trips_per_dock"], results["predicted_trips_per_dock"], s=70)
 
-print("\nTop 5 Biggest Errors")
-print(results.head())
-
-# %%
-# Smallest errors table
-results = pd.DataFrame(
-    {
-        "name": df.loc[X_test.index, "name"],
-        "actual": y_test_orig,
-        "predicted": y_pred_orig,
-        "residual": y_test_orig - y_pred_orig,
-        "abs_error": np.abs(y_test_orig - y_pred_orig),
-    }
-).sort_values("abs_error", ascending=True)
-
-print("\nTop 5 Smallest Errors")
-print(results.head())
-
-# %%
-# WITHOUT UT STATIONS
-df = pd.read_csv("../data/cleaned/combined_datasets/v2/ml_dataset_v2.csv")
-
-df = df[df["is_ut"] == 0]
-
-X = df.drop(columns=["trips_per_dock", "name", "lat", "lon"])
-y = np.log1p(df["trips_per_dock"])
-
-X.head()
-
-# %%
-kf = KFold(n_splits=5, shuffle=True, random_state=42)
-
-xgb_model = XGBRegressor(
-    n_estimators=100,
-    max_depth=3,
-    learning_rate=0.1,
-    min_child_weight=5,
-    subsample=1.0,
-    colsample_bytree=0.8,
-    random_state=42,
-    objective="reg:squarederror",
+min_val = min(
+    results["actual_trips_per_dock"].min(), results["predicted_trips_per_dock"].min()
+)
+max_val = max(
+    results["actual_trips_per_dock"].max(), results["predicted_trips_per_dock"].max()
 )
 
+plt.plot([min_val, max_val], [min_val, max_val], linestyle="--")
+plt.xlabel("Actual Trips per Dock")
+plt.ylabel("Predicted Trips per Dock")
+plt.title("Actual vs Predicted Trips per Dock")
+plt.tight_layout()
+plt.show()
+
 # %%
-scores = cross_validate(
-    xgb_model,
-    X,
-    y,
-    cv=kf,
-    scoring=("r2", "neg_mean_absolute_error", "neg_root_mean_squared_error"),
+# Optional: labeled actual vs predicted plot
+plot_df = df.loc[X_test.index, ["name"]].copy()
+plot_df["actual_trips_per_dock"] = y_test_orig.values
+plot_df["predicted_trips_per_dock"] = y_pred_orig
+
+plt.figure(figsize=(10, 8))
+plt.scatter(plot_df["actual_trips_per_dock"], plot_df["predicted_trips_per_dock"], s=80)
+
+for _, row in plot_df.iterrows():
+    plt.annotate(
+        row["name"],
+        (row["actual_trips_per_dock"], row["predicted_trips_per_dock"]),
+        fontsize=9,
+    )
+
+min_val = min(
+    plot_df["actual_trips_per_dock"].min(), plot_df["predicted_trips_per_dock"].min()
+)
+max_val = max(
+    plot_df["actual_trips_per_dock"].max(), plot_df["predicted_trips_per_dock"].max()
 )
 
-print("Log-target XGBoost CV R² scores:", np.round(scores["test_r2"], 3))
-print("Mean CV R²:", scores["test_r2"].mean().round(3))
-print("Std CV R²:", scores["test_r2"].std().round(3))
-print("Mean MAE:", (-scores["test_neg_mean_absolute_error"].mean()).round(3))
-print("Mean RMSE:", (-scores["test_neg_root_mean_squared_error"].mean()).round(3))
+plt.plot([min_val, max_val], [min_val, max_val], linestyle="--")
+plt.xlabel("Actual Trips per Dock")
+plt.ylabel("Predicted Trips per Dock")
+plt.title("Actual vs Predicted Trips per Dock (Labeled)")
+plt.tight_layout()
+plt.show()
 
 # %%
-# Fit once on a train/test split so we can make prediction plots
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42
+# Residuals
+plot_df["residual"] = (
+    plot_df["actual_trips_per_dock"] - plot_df["predicted_trips_per_dock"]
 )
+plot_df["abs_residual"] = np.abs(plot_df["residual"])
 
-xgb_model.fit(X_train, y_train)
-
-y_pred_log = xgb_model.predict(X_test)
-
-# back-transform to original scale
-y_test_orig = np.expm1(y_test)
-y_pred_orig = np.expm1(y_pred_log)
-
-print("\nFinal Log-Target XGBoost Test Results (original units)")
-print("-" * 50)
-print(f"R²   : {r2_score(y_test_orig, y_pred_orig):.3f}")
-print(f"MAE  : {mean_absolute_error(y_test_orig, y_pred_orig):.3f}")
-print(f"RMSE : {np.sqrt(mean_squared_error(y_test_orig, y_pred_orig)):.3f}")
-
-# %%
-# ONLY UT STATIONS
-df = pd.read_csv("../data/cleaned/combined_datasets/v2/ml_dataset_v2.csv")
-
-df = df[df["is_ut"] == 1]
-
-X = df.drop(columns=["trips_per_dock", "name", "lat", "lon"])
-y = np.log1p(df["trips_per_dock"])
-
-X.head()
-
-# %%
-kf = KFold(n_splits=5, shuffle=True, random_state=42)
-
-xgb_model = XGBRegressor(
-    n_estimators=100,
-    max_depth=3,
-    learning_rate=0.1,
-    min_child_weight=5,
-    subsample=1.0,
-    colsample_bytree=0.8,
-    random_state=42,
-    objective="reg:squarederror",
-)
-
-# %%
-scores = cross_validate(
-    xgb_model,
-    X,
-    y,
-    cv=kf,
-    scoring=("r2", "neg_mean_absolute_error", "neg_root_mean_squared_error"),
-)
-
-print("Log-target XGBoost CV R² scores:", np.round(scores["test_r2"], 3))
-print("Mean CV R²:", scores["test_r2"].mean().round(3))
-print("Std CV R²:", scores["test_r2"].std().round(3))
-print("Mean MAE:", (-scores["test_neg_mean_absolute_error"].mean()).round(3))
-print("Mean RMSE:", (-scores["test_neg_root_mean_squared_error"].mean()).round(3))
-
-# %%
-# Fit once on a train/test split so we can make prediction plots
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42
-)
-
-xgb_model.fit(X_train, y_train)
-
-y_pred_log = xgb_model.predict(X_test)
-
-# back-transform to original scale
-y_test_orig = np.expm1(y_test)
-y_pred_orig = np.expm1(y_pred_log)
-
-print("\nFinal Log-Target XGBoost Test Results (original units)")
-print("-" * 50)
-print(f"R²   : {r2_score(y_test_orig, y_pred_orig):.3f}")
-print(f"MAE  : {mean_absolute_error(y_test_orig, y_pred_orig):.3f}")
-print(f"RMSE : {np.sqrt(mean_squared_error(y_test_orig, y_pred_orig)):.3f}")
-
-X.head()
+plot_df.sort_values("abs_residual", ascending=False).head(10)
