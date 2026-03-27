@@ -6,14 +6,12 @@ import pandas as pd
 # ============================================================
 # Load data
 # ============================================================
-prefix = "../../data/cleaned/"
-
-amenities = pd.read_csv(prefix + "amenities/amenities.csv")
-coords = pd.read_csv(prefix + "coords/coords.csv")
-jobs = pd.read_csv(prefix + "jobs/jobs.csv")
-retail = pd.read_csv(prefix + "retail/retail.csv")
-transit = pd.read_csv(prefix + "transit/transit.csv")
-housing = pd.read_csv(prefix + "housing/housing.csv")
+amenities = pd.read_csv("../data/cleaned/amenities/amenities.csv")
+coords = pd.read_csv("../data/cleaned/coords/coords.csv")
+jobs = pd.read_csv("../data/cleaned/jobs/jobs.csv")
+retail = pd.read_csv("../data/cleaned/retail/retail.csv")
+transit = pd.read_csv("../data/cleaned/transit/transit.csv")
+housing = pd.read_csv("../data/cleaned/housing/housing.csv")
 
 # ============================================================
 # Styling
