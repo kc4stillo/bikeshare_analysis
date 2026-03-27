@@ -367,7 +367,7 @@ scores_and_coords = add_sum_within_buffer(
     source_df=housing,
     value_col="count",
     out_col="housing_nearby",
-    buffer_m=275,
+    buffer_m=1000,
 )
 
 scores_and_coords["job_housing_ratio_275m"] = np.where(
