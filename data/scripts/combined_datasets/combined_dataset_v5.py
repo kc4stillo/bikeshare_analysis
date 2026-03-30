@@ -632,8 +632,8 @@ scores_and_coords = add_hotspot_summary_features(
 scores_and_coords = add_manual_point_distance(
     base_df=scores_and_coords,
     out_col="dist_to_west_campus_center_m",
-    point_lat=30.2885,
-    point_lon=-97.7475,
+    point_lat=30.288500,
+    point_lon=-97.747500,
 )
 
 # %%
