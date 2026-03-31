@@ -18,7 +18,7 @@ CLEANED_PREFIX = "../../cleaned/"
 OUTPUT_PREFIX = "../../cleaned/combined_datasets/v6/"
 SOURCE_CRS = "EPSG:4326"
 PROJECTED_CRS = "EPSG:26914"  # UTM 14N, good for Austin-area meter distances
-BUFFER_SIZES_M = (275, 500)
+BUFFER_SIZES_M = (275, 500, 1000)
 PARK_BUFFER_M = 275
 
 Path(OUTPUT_PREFIX).mkdir(parents=True, exist_ok=True)
@@ -941,6 +941,7 @@ final_columns = [
     "west_campus_shape_area_within_500m",
     "west_campus_shape_share_of_500m_buffer",
     "west_campus_shape_touches_500m_buffer",
+    "west_campus_shape_area_within_1000m",
     # north campus shape features
     "in_north_campus_shape",
     "dist_to_north_campus_shape_m",
@@ -1042,6 +1043,7 @@ continuous_scale_cols = [
     "west_campus_shape_area_within_275m",
     "west_campus_shape_share_of_275m_buffer",
     "west_campus_shape_area_within_500m",
+    "west_campus_shape_area_within_1000m",
     "west_campus_shape_share_of_500m_buffer",
     "dist_to_north_campus_shape_m",
     "north_campus_shape_area_within_275m",

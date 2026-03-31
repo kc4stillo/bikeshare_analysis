@@ -69,6 +69,7 @@ feature_cols = [
     "west_campus_shape_share_of_275m_buffer",
     "west_campus_shape_touches_275m_buffer",
     "west_campus_shape_area_within_500m",
+    "west_campus_shape_area_within_1000m",
     "west_campus_shape_share_of_500m_buffer",
     "west_campus_shape_touches_500m_buffer",
     "in_north_campus_shape",
