@@ -9,7 +9,10 @@ from xgboost import XGBRegressor
 # ----------------------------
 # Load dataset
 # ----------------------------
-df = pd.read_csv("../data/cleaned/combined_datasets/v6/ml_dataset_v6.csv")
+df = pd.read_csv("../../data/cleaned/combined_datasets/v6/ml_dataset_v6.csv")
+
+# remove non-ut stations
+df = df[df["is_ut"] == 1]
 
 # %%
 # ----------------------------
@@ -179,6 +182,6 @@ importance_df = pd.DataFrame(
     {"feature": X.columns, "importance": model.feature_importances_}
 ).sort_values("importance", ascending=False)
 
-print("\nTop 40 Features")
+print("\nTop Features")
 print("-" * 40)
-print(importance_df.head(40).to_string(index=False))
+print(importance_df.to_string(index=False))

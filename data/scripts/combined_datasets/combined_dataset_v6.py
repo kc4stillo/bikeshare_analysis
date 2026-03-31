@@ -16,35 +16,120 @@ pd.set_option("display.max_columns", 100)
 # %%
 CLEANED_PREFIX = "../../cleaned/"
 OUTPUT_PREFIX = "../../cleaned/combined_datasets/v6/"
+SOURCE_CRS = "EPSG:4326"
 PROJECTED_CRS = "EPSG:26914"  # UTM 14N, good for Austin-area meter distances
 BUFFER_SIZES_M = (275, 500)
+PARK_BUFFER_M = 275
 
 Path(OUTPUT_PREFIX).mkdir(parents=True, exist_ok=True)
+
+
+# %%
+# -----------------------------
+# Small utilities
+# -----------------------------
+def normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
+    out = df.copy()
+    out.columns = out.columns.astype(str).str.strip()
+    return out
+
+
+def to_numeric_inplace(df: pd.DataFrame, cols) -> pd.DataFrame:
+    out = df.copy()
+    for col in cols:
+        if col in out.columns:
+            out[col] = pd.to_numeric(out[col], errors="coerce")
+    return out
+
+
+def safe_load_wkt(value):
+    if pd.isna(value):
+        return None
+    try:
+        return wkt.loads(value)
+    except Exception:
+        return None
+
+
+def union_geometries(gdf: gpd.GeoDataFrame):
+    if gdf.empty:
+        return None
+
+    try:
+        # shapely/geopandas newer versions
+        return gdf.geometry.union_all()
+    except Exception:
+        # fallback for older versions
+        return gdf.geometry.unary_union
+
 
 # %%
 # -----------------------------
 # Load datasets
 # -----------------------------
-amenities = pd.read_csv(CLEANED_PREFIX + "amenities/amenities.csv")
-coords = pd.read_csv(CLEANED_PREFIX + "coords/bikeshare_stations.csv")
-housing = pd.read_csv(CLEANED_PREFIX + "housing/housing.csv")
-jobs = pd.read_csv(CLEANED_PREFIX + "jobs/jobs.csv")
-retail = pd.read_csv(CLEANED_PREFIX + "retail/retail.csv")
-scores = pd.read_csv(CLEANED_PREFIX + "scoring/current_stations.csv")
-transit = pd.read_csv(CLEANED_PREFIX + "transit/transit.csv")
-parks = pd.read_csv(CLEANED_PREFIX + "amenities/parks.csv")
-dining_halls = pd.read_csv(CLEANED_PREFIX + "amenities/dining_halls.csv")
-dorms = pd.read_csv(CLEANED_PREFIX + "housing/dorms.csv")
-ut_shape = pd.read_csv(CLEANED_PREFIX + "coords/ut_shape.csv")
-west_campus_shape = pd.read_csv(CLEANED_PREFIX + "coords/west_campus.csv")
-north_campus_shape = pd.read_csv(CLEANED_PREFIX + "coords/north_campus.csv")
+amenities = normalize_columns(pd.read_csv(CLEANED_PREFIX + "amenities/amenities.csv"))
+coords = normalize_columns(
+    pd.read_csv(CLEANED_PREFIX + "coords/bikeshare_stations.csv")
+)
+housing = normalize_columns(pd.read_csv(CLEANED_PREFIX + "housing/housing.csv"))
+jobs = normalize_columns(pd.read_csv(CLEANED_PREFIX + "jobs/jobs.csv"))
+retail = normalize_columns(pd.read_csv(CLEANED_PREFIX + "retail/retail.csv"))
+scores = normalize_columns(pd.read_csv(CLEANED_PREFIX + "scoring/current_stations.csv"))
+transit = normalize_columns(pd.read_csv(CLEANED_PREFIX + "transit/transit.csv"))
+parks = normalize_columns(pd.read_csv(CLEANED_PREFIX + "amenities/parks.csv"))
+dining_halls = normalize_columns(
+    pd.read_csv(CLEANED_PREFIX + "amenities/dining_halls.csv")
+)
+dorms = normalize_columns(pd.read_csv(CLEANED_PREFIX + "housing/dorms.csv"))
+ut_shape = normalize_columns(pd.read_csv(CLEANED_PREFIX + "coords/ut_shape.csv"))
+west_campus_shape = normalize_columns(
+    pd.read_csv(CLEANED_PREFIX + "coords/west_campus.csv")
+)
+north_campus_shape = normalize_columns(
+    pd.read_csv(CLEANED_PREFIX + "coords/north_campus.csv")
+)
+
+# Numeric cleanup for known numeric columns
+coords = to_numeric_inplace(coords, ["lat", "lon"])
+housing = to_numeric_inplace(housing, ["count", "lat", "lon"])
+jobs = to_numeric_inplace(jobs, ["job_count", "lat", "lon"])
+amenities = to_numeric_inplace(amenities, ["lat", "lon"])
+retail = to_numeric_inplace(retail, ["lat", "lon"])
+transit = to_numeric_inplace(transit, ["lat", "lon"])
+dining_halls = to_numeric_inplace(dining_halls, ["lat", "lon"])
+dorms = to_numeric_inplace(dorms, ["population", "lat", "lon"])
+scores = to_numeric_inplace(
+    scores,
+    [
+        "id",
+        "trips",
+        "total_docks",
+        "trips_per_dock",
+        "ebs_station",
+        "checkouts_rank_per_day",
+        "transit_access_score",
+        "jobs_access_score",
+        "households_access_score",
+        "low_income_access_score",
+        "public_amenities_access_score",
+        "bike_infra_score",
+        "retail_entertainment_access_score",
+        "existing_bikeshare_access_score",
+        "total_score",
+        "is_ut",
+    ],
+)
 
 # %%
 # -----------------------------
 # Merge scores + coordinates
 # -----------------------------
+coords_for_merge = coords[["scoring_name", "lat", "lon"]].drop_duplicates(
+    subset=["scoring_name"]
+)
+
 scores_and_coords = scores.merge(
-    coords[["scoring_name", "lat", "lon"]],
+    coords_for_merge,
     left_on="name",
     right_on="scoring_name",
     how="left",
@@ -72,8 +157,13 @@ scores_and_coords.rename(columns=rename_map, inplace=True)
 # -----------------------------
 # Helper functions
 # -----------------------------
-def make_points_gdf(df, lat_col="lat", lon_col="lon", crs="EPSG:4326"):
-    out = df.dropna(subset=[lat_col, lon_col]).copy()
+def make_points_gdf(df, lat_col="lat", lon_col="lon", crs=SOURCE_CRS):
+    out = normalize_columns(df)
+    out = out.copy()
+    out[lat_col] = pd.to_numeric(out[lat_col], errors="coerce")
+    out[lon_col] = pd.to_numeric(out[lon_col], errors="coerce")
+    out = out.dropna(subset=[lat_col, lon_col]).copy()
+
     return gpd.GeoDataFrame(
         out,
         geometry=gpd.points_from_xy(out[lon_col], out[lat_col]),
@@ -81,11 +171,27 @@ def make_points_gdf(df, lat_col="lat", lon_col="lon", crs="EPSG:4326"):
     )
 
 
-def make_polygon_gdf(df, shape_col="shape", crs="EPSG:4326"):
-    out = df.dropna(subset=[shape_col]).copy()
-    out["geometry"] = out[shape_col].apply(wkt.loads)
-    out = gpd.GeoDataFrame(out, geometry="geometry", crs=crs)
-    out["geometry"] = out.geometry.buffer(0)  # minor geometry cleanup
+def make_polygon_gdf(df, shape_col="shape", source_crs=SOURCE_CRS):
+    out = normalize_columns(df)
+    out = out.copy()
+
+    if shape_col not in out.columns:
+        raise KeyError(
+            f"Column '{shape_col}' not found. Available columns: {list(out.columns)}"
+        )
+
+    out["geometry"] = out[shape_col].apply(safe_load_wkt)
+    out = out.dropna(subset=["geometry"]).copy()
+
+    if out.empty:
+        return gpd.GeoDataFrame(out, geometry="geometry", crs=source_crs)
+
+    out = gpd.GeoDataFrame(out, geometry="geometry", crs=source_crs)
+
+    # light cleanup for invalid polygons
+    out["geometry"] = out.geometry.buffer(0)
+    out = out[~out.geometry.is_empty].copy()
+
     return out
 
 
@@ -117,7 +223,8 @@ def add_count_within_buffer(
     stations_buffer = stations_gdf[["id", "geometry"]].copy()
     stations_buffer["geometry"] = stations_buffer.geometry.buffer(buffer_m)
 
-    joined = gpd.sjoin(source_gdf, stations_buffer, how="inner", predicate="within")
+    # intersects is slightly safer than within because boundary points still count
+    joined = gpd.sjoin(source_gdf, stations_buffer, how="inner", predicate="intersects")
     counts = joined.groupby("id").size().rename(out_col).reset_index()
 
     out = base_df.merge(counts, on="id", how="left")
@@ -147,6 +254,7 @@ def add_sum_within_buffer(
         out[out_col] = 0
         return out
 
+    src[value_col] = pd.to_numeric(src[value_col], errors="coerce").fillna(0)
     source_gdf = make_points_gdf(src, source_lat_col, source_lon_col).to_crs(
         PROJECTED_CRS
     )
@@ -154,7 +262,7 @@ def add_sum_within_buffer(
     stations_buffer = stations_gdf[["id", "geometry"]].copy()
     stations_buffer["geometry"] = stations_buffer.geometry.buffer(buffer_m)
 
-    joined = gpd.sjoin(source_gdf, stations_buffer, how="inner", predicate="within")
+    joined = gpd.sjoin(source_gdf, stations_buffer, how="inner", predicate="intersects")
     sums = joined.groupby("id")[value_col].sum().rename(out_col).reset_index()
 
     out = base_df.merge(sums, on="id", how="left")
@@ -186,8 +294,11 @@ def add_nearest_distance(
         PROJECTED_CRS
     )
 
+    source_union = union_geometries(source_gdf)
     stations_gdf[out_col] = stations_gdf.geometry.apply(
-        lambda station_geom: source_gdf.distance(station_geom).min()
+        lambda station_geom: station_geom.distance(source_union)
+        if source_union is not None
+        else np.nan
     )
 
     out = base_df.merge(stations_gdf[["id", out_col]], on="id", how="left")
@@ -222,7 +333,7 @@ def add_avg_k_nearest_distance(
 
     def avg_k_dist(station_geom):
         dists = source_gdf.geometry.distance(station_geom).sort_values().values
-        return dists[: min(k, len(dists))].mean()
+        return dists[: min(k, len(dists))].mean() if len(dists) > 0 else np.nan
 
     stations_gdf[out_col] = stations_gdf.geometry.apply(avg_k_dist)
 
@@ -317,54 +428,76 @@ def add_network_features(base_df):
     return out
 
 
-def add_park_area_within_buffer(base_df, parks_df, buffer_m=275):
-    stations_gdf = make_points_gdf(base_df, "lat", "lon")
+def make_parks_gdf(parks_df, geometry_col="geometry"):
+    parks_polys = normalize_columns(parks_df)
+    parks_polys = parks_polys.copy()
 
-    parks_polys = parks_df.copy()
-    parks_polys["geometry"] = parks_polys["geometry"].apply(wkt.loads)
-    parks_gdf = gpd.GeoDataFrame(parks_polys, geometry="geometry", crs=PROJECTED_CRS)
+    if geometry_col not in parks_polys.columns:
+        raise KeyError(
+            f"Column '{geometry_col}' not found in parks data. Available columns: {list(parks_polys.columns)}"
+        )
 
-    stations_gdf = stations_gdf.to_crs(parks_gdf.crs)
+    parks_polys["geometry"] = parks_polys[geometry_col].apply(safe_load_wkt)
+    parks_polys = parks_polys.dropna(subset=["geometry"]).copy()
 
-    stations_buffer = stations_gdf[["id", "geometry"]].copy()
-    stations_buffer["geometry"] = stations_buffer.geometry.buffer(buffer_m)
+    if parks_polys.empty:
+        return gpd.GeoDataFrame(parks_polys, geometry="geometry", crs=SOURCE_CRS)
 
-    park_intersections = gpd.overlay(parks_gdf, stations_buffer, how="intersection")
-    park_intersections["park_area_part"] = park_intersections.geometry.area
+    # parks.csv WKT appears to be lon/lat, so initialize as EPSG:4326 first,
+    # then project to meters for area + distance operations.
+    parks_gdf = gpd.GeoDataFrame(parks_polys, geometry="geometry", crs=SOURCE_CRS)
+    parks_gdf["geometry"] = parks_gdf.geometry.buffer(0)
+    parks_gdf = parks_gdf[~parks_gdf.geometry.is_empty].copy()
+    parks_gdf = parks_gdf.to_crs(PROJECTED_CRS)
+    return parks_gdf
 
-    park_area = (
-        park_intersections.groupby("id")["park_area_part"]
-        .sum()
-        .rename("park_area_nearby")
-        .reset_index()
+
+def add_park_area_within_buffer(base_df, parks_df, buffer_m=275, out_col=None):
+    if out_col is None:
+        out_col = f"park_area_within_{buffer_m}m"
+
+    stations_gdf = make_points_gdf(base_df, "lat", "lon").to_crs(PROJECTED_CRS)
+    parks_gdf = make_parks_gdf(parks_df)
+
+    out = base_df.copy()
+    if parks_gdf.empty:
+        out[out_col] = 0.0
+        return out
+
+    parks_union = union_geometries(parks_gdf)
+    if parks_union is None:
+        out[out_col] = 0.0
+        return out
+
+    stations_gdf[out_col] = stations_gdf.geometry.buffer(buffer_m).apply(
+        lambda geom: geom.intersection(parks_union).area
     )
 
-    out = base_df.merge(park_area, on="id", how="left")
-    out["park_area_nearby"] = out["park_area_nearby"].fillna(0).round().astype(int)
+    out = out.merge(stations_gdf[["id", out_col]], on="id", how="left")
+    out[out_col] = out[out_col].fillna(0).round(2)
     return out
 
 
-def add_nearest_park_distance(base_df, parks_df):
-    stations_gdf = make_points_gdf(base_df, "lat", "lon")
+def add_nearest_park_distance(base_df, parks_df, out_col="nearest_park_dist_m"):
+    stations_gdf = make_points_gdf(base_df, "lat", "lon").to_crs(PROJECTED_CRS)
+    parks_gdf = make_parks_gdf(parks_df)
 
-    parks_polys = parks_df.copy()
-    parks_polys["geometry"] = parks_polys["geometry"].apply(wkt.loads)
-    parks_gdf = gpd.GeoDataFrame(parks_polys, geometry="geometry", crs=PROJECTED_CRS)
+    out = base_df.copy()
+    if parks_gdf.empty:
+        out[out_col] = np.nan
+        return out
 
-    stations_gdf = stations_gdf.to_crs(parks_gdf.crs)
+    parks_union = union_geometries(parks_gdf)
+    if parks_union is None:
+        out[out_col] = np.nan
+        return out
 
-    stations_gdf["nearest_park_dist_m"] = stations_gdf.geometry.apply(
-        lambda station_geom: parks_gdf.distance(station_geom).min()
-        if len(parks_gdf) > 0
-        else np.nan
+    stations_gdf[out_col] = stations_gdf.geometry.apply(
+        lambda station_geom: station_geom.distance(parks_union)
     )
 
-    out = base_df.merge(
-        stations_gdf[["id", "nearest_park_dist_m"]],
-        on="id",
-        how="left",
-    )
-    out["nearest_park_dist_m"] = out["nearest_park_dist_m"].round(2)
+    out = out.merge(stations_gdf[["id", out_col]], on="id", how="left")
+    out[out_col] = out[out_col].round(2)
     return out
 
 
@@ -374,7 +507,7 @@ def add_manual_point_distance(base_df, out_col, point_lat, point_lon):
     point_gdf = gpd.GeoDataFrame(
         {"name": [out_col]},
         geometry=[Point(point_lon, point_lat)],
-        crs="EPSG:4326",
+        crs=SOURCE_CRS,
     ).to_crs(PROJECTED_CRS)
 
     target_geom = point_gdf.geometry.iloc[0]
@@ -408,8 +541,8 @@ def add_polygon_zone_features(
     stations_proj = stations_gdf.to_crs(PROJECTED_CRS)
     zones_proj = zones_gdf.to_crs(PROJECTED_CRS)
 
-    # dissolve into one geometry so multiple rows still behave as one campus zone
-    zone_geom = zones_proj.geometry.unary_union
+    # dissolve into one geometry so multiple rows still behave as one zone
+    zone_geom = union_geometries(zones_proj)
 
     stations_proj[f"in_{prefix}"] = stations_proj.geometry.within(zone_geom).astype(int)
     stations_proj[f"dist_to_{prefix}_m"] = stations_proj.geometry.distance(zone_geom)
@@ -562,7 +695,12 @@ scores_and_coords = add_avg_k_nearest_distance(
 # -----------------------------
 # Parks
 # -----------------------------
-scores_and_coords = add_park_area_within_buffer(scores_and_coords, parks, buffer_m=275)
+scores_and_coords = add_park_area_within_buffer(
+    scores_and_coords,
+    parks,
+    buffer_m=PARK_BUFFER_M,
+    out_col="park_area_nearby",  # keeps backward-compatible column name
+)
 scores_and_coords = add_nearest_park_distance(scores_and_coords, parks)
 
 # %%
