@@ -1,12 +1,16 @@
 amenities:
 -- libraries
   -- https://data.austintexas.gov/Locations-and-Maps/Austin-Public-Library-Locations/tc36-hn4j/data_preview
+  -- https://osmfoundation.org/wiki/Licence/Attribution_Guidelines
 -- rec centers
   -- https://data.austintexas.gov/Locations-and-Maps/Recreation-Centers/8dff-2vkt/data_preview
+  -- https://osmfoundation.org/wiki/Licence/Attribution_Guidelines
 -- pools
   -- https://data.austintexas.gov/Locations-and-Maps/Austin-Pool-Schedule/xaxa-886r/data_preview
+  -- https://osmfoundation.org/wiki/Licence/Attribution_Guidelines
 -- park borders
   -- https://data.austintexas.gov/Recreation-and-Culture/BOUNDARIES_city_of_austin_parks/8f2b-a4q5
+  -- https://osmfoundation.org/wiki/Licence/Attribution_Guidelines
 
 public transport:
 -- bus and rail coords
@@ -31,3 +35,4 @@ housing:
 retail:
 -- shops and all that (love this stuff)
   -- https://osmnx.readthedocs.io/en/stable/
+  -- https://osmfoundation.org/wiki/Licence/Attribution_Guidelines
