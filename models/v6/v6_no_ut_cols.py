@@ -5,6 +5,9 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import KFold, cross_val_score, train_test_split
 from xgboost import XGBRegressor
 
+pd.set_option("display.max_rows", 100)
+pd.set_option("display.max_columns", 100)
+
 # %%
 # ----------------------------
 # Load dataset

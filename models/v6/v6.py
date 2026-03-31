@@ -5,6 +5,9 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import KFold, cross_val_score, train_test_split
 from xgboost import XGBRegressor
 
+pd.set_option("display.max_rows", 100)
+pd.set_option("display.max_columns", 100)
+
 # %%
 # ----------------------------
 # Load dataset
@@ -227,38 +230,16 @@ least_accurate = results_df.sort_values("abs_error", ascending=False)
 
 print("\nMost Accurate Predictions")
 print("-" * 60)
-print(
-    most_accurate[
-        [
-            "name",
-            "district",
-            "actual",
-            "predicted",
-            "error",
-            "abs_error",
-            "pct_error",
-            "is_ut",
-        ]
-    ]
-    .head(10)
-    .to_string(index=False)
-)
 
-print("\nLeast Accurate Predictions")
-print("-" * 60)
-print(
-    least_accurate[
-        [
-            "name",
-            "district",
-            "actual",
-            "predicted",
-            "error",
-            "abs_error",
-            "pct_error",
-            "is_ut",
-        ]
+most_accurate[
+    [
+        "name",
+        "district",
+        "actual",
+        "predicted",
+        "error",
+        "abs_error",
+        "pct_error",
+        "is_ut",
     ]
-    .head(10)
-    .to_string(index=False)
-)
+].sort_values("abs_error")
