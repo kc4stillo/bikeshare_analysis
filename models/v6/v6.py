@@ -11,6 +11,9 @@ from xgboost import XGBRegressor
 # ----------------------------
 df = pd.read_csv("../../data/cleaned/combined_datasets/v6/ml_dataset_v6.csv")
 
+df_with_names = pd.read_csv(
+    "../../data/cleaned/combined_datasets/v6/combined_dataset_v6.csv"
+)
 # %%
 # ----------------------------
 # Define features and target
@@ -182,3 +185,80 @@ importance_df = pd.DataFrame(
 print("\nTop Features")
 print("-" * 40)
 print(importance_df.to_string(index=False))
+
+# %%
+# ----------------------------
+# Station-level prediction accuracy on test set
+# ----------------------------
+
+# keep the test-set row indices so we can recover station names
+X_train, X_test, y_train_log, y_test_log, y_train_orig, y_test_orig = train_test_split(
+    X, y_log, y, test_size=0.5, random_state=21
+)
+
+# Fit model
+model.fit(X_train, y_train_log)
+
+# Predict
+y_pred_log = model.predict(X_test)
+y_pred_orig = np.expm1(y_pred_log)
+
+# Build results dataframe
+results_df = df_with_names.loc[
+    X_test.index, ["id", "name", "district", "trips_per_dock", "is_ut"]
+].copy()
+results_df["actual"] = y_test_orig.values
+results_df["predicted"] = y_pred_orig
+results_df["error"] = results_df["predicted"] - results_df["actual"]
+results_df["abs_error"] = np.abs(results_df["error"])
+
+# optional: percent error
+results_df["pct_error"] = np.where(
+    results_df["actual"] != 0,
+    results_df["abs_error"] / results_df["actual"] * 100,
+    np.nan,
+)
+
+# Most accurate predictions = smallest absolute error
+most_accurate = results_df.sort_values("abs_error", ascending=True)
+
+# Least accurate predictions = largest absolute error
+least_accurate = results_df.sort_values("abs_error", ascending=False)
+
+print("\nMost Accurate Predictions")
+print("-" * 60)
+print(
+    most_accurate[
+        [
+            "name",
+            "district",
+            "actual",
+            "predicted",
+            "error",
+            "abs_error",
+            "pct_error",
+            "is_ut",
+        ]
+    ]
+    .head(10)
+    .to_string(index=False)
+)
+
+print("\nLeast Accurate Predictions")
+print("-" * 60)
+print(
+    least_accurate[
+        [
+            "name",
+            "district",
+            "actual",
+            "predicted",
+            "error",
+            "abs_error",
+            "pct_error",
+            "is_ut",
+        ]
+    ]
+    .head(10)
+    .to_string(index=False)
+)
