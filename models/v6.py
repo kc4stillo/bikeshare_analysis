@@ -1,5 +1,4 @@
 # %%
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
@@ -180,23 +179,6 @@ importance_df = pd.DataFrame(
     {"feature": X.columns, "importance": model.feature_importances_}
 ).sort_values("importance", ascending=False)
 
-print("\nTop 20 Features")
+print("\nTop 40 Features")
 print("-" * 40)
-print(importance_df.head(20).to_string(index=False))
-
-# %%
-# ----------------------------
-# Actual vs Predicted scatterplot
-# ----------------------------
-plt.figure(figsize=(8, 6))
-plt.scatter(y_test_orig, y_pred_orig, s=80, alpha=0.7)
-
-min_val = min(y_test_orig.min(), y_pred_orig.min())
-max_val = max(y_test_orig.max(), y_pred_orig.max())
-plt.plot([min_val, max_val], [min_val, max_val], linestyle="--")
-
-plt.xlabel("Actual trips_per_dock")
-plt.ylabel("Predicted trips_per_dock")
-plt.title("XGBoost with Log Target: Actual vs Predicted")
-plt.grid(True, alpha=0.3)
-plt.show()
+print(importance_df.head(40).to_string(index=False))
