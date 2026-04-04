@@ -96,7 +96,7 @@ age_by_block_group_2019["median_age_2019"] = clean_attribute(
 
 # sanity check: looking at wampus:
 age_by_block_group_2019[
-    age_by_block_group_2019["name"].str.contains("(Block Group 2; Census Tract 6.0)")
+    age_by_block_group_2019["name"].str.contains("(Block Group 2; Census Tract 6.)")
 ]
 
 # %%
@@ -112,18 +112,6 @@ income_by_block_group_2024.columns = ["name", "median_household_income_2024", "g
 income_by_block_group_2024["median_household_income_2024"] = clean_attribute(
     income_by_block_group_2024["median_household_income_2024"]
 )
-
-missing_wampus_rows = {
-    "name": [
-        "Block Group 2; Census Tract 6.03; Travis County; Texas",
-        "Block Group 5; Census Tract 6.03; Travis County; Texas",
-        "Block Group 3; Census Tract 6.04; Travis County; Texas",
-        "Block Group 4; Census Tract 6.03; Travis County, Texas",
-        "Block Group 1; Census Tract 11; Travis County, Texas",
-    ],
-    "median_household_income": [17656, 5287, 8761, 4823, 114115],
-    "geoid": [],
-}
 
 # sanity check: looking at wampus:
 income_by_block_group_2024[
@@ -219,7 +207,7 @@ df = pd.concat(
     ignore_index=True,
 )
 
-df = df.drop_duplicates().sort_values("geoid").reset_index(drop=True)
+df = df.drop_duplicates()
 
 print(df.head())
 print(len(df))
@@ -255,10 +243,10 @@ df["count_undergrad_2024"] = df["count_undergrad_2024"].fillna(
 df["count_grad_2024"] = df["count_grad_2024"].fillna(df["count_grad_2019"])
 
 # inflation from 2019 to 2024
-factor_2019_to_2024 = 462.5 / 375.8  # 1.23070782
+# factor_2019_to_2024 = 462.5 / 375.8  # 1.23070782
 
 df["median_household_income_2024"] = df["median_household_income_2024"].fillna(
-    df["median_household_income_2019"] * factor_2019_to_2024
+    df["median_household_income_2019"]
 )
 
 # %%
@@ -280,7 +268,48 @@ df = df[
 
 df.columns = ["geoid", "age", "income", "undergrad", "grad"]
 
-df = df.dropna()
+# name template: Block Group 1; Census Tract 1.01; Travis County; Texas
+# missing_rows = pd.DataFrame(
+#     {
+#         "geoid": [
+#             484530006053,
+#             484530006062,
+#             484530006064,
+#             484530006063,
+#             484530006072,
+#             484530006051,
+#             484530006071,
+#             484530011011,
+#         ],
+#         "age": [22, 21, 20, 20, 20, 20, 25, 40],
+#         "income": [
+#             17656,
+#             5287,
+#             4823,
+#             2499,
+#             8761,
+#             7000,
+#             9000,
+#             114115,
+#         ],
+#         "undergrad": [3000, 2000, 2500, 3000, 3000, 1700, 900, 10],
+#         "grad": [200, 350, 200, 300, 250, 130, 300, 0],
+#     }
+# )
+
+# df = pd.concat([[df, missing_rows]])
+
+### TESTING HARD CODED ADDED VALUES
+df.loc[df["geoid"] == "484530006053", "income"] = 17656
+df.loc[df["geoid"] == "484530006062", "income"] = 5287
+df.loc[df["geoid"] == "484530006064", "income"] = 4823
+df.loc[df["geoid"] == "484530006063", "income"] = 2499
+df.loc[df["geoid"] == "484530006072", "income"] = 8761
+df.loc[df["geoid"] == "484530006051", "income"] = 7000
+df.loc[df["geoid"] == "484530006071", "income"] = 9000
+df.loc[df["geoid"] == "484530011011", "income"] = 114115
+
+# df = df.dropna()
 
 # %%
 import geopandas as gpd
@@ -300,7 +329,7 @@ bg_shapes = gpd.read_file("../raw/block_shapes/tl_2024_48_bg.shp")
 
 # %%
 # inspect columns
-print(bg_shapes.columns)
+print(bg_shapes.columns)J
 print(bg_shapes.head())
 
 # %%
@@ -319,15 +348,17 @@ map_df = bg_shapes.merge(
     df,
     left_on="GEOID",
     right_on="geoid",
-    how="inner",  # use "left" if you want all shapes, even unmatched ones
+    how="left",  # use "left" if you want all shapes, even unmatched ones
 )
 
 # %%
 print(map_df[["GEOID", "age", "income", "undergrad", "grad"]].head())
 print(map_df.shape)
 
-# %%
-# %%
+df = map_df[["age", "income", "undergrad", "grad", "geometry"]]
+
+df.to_csv("../cleaned/demographics/demographics.csv", index=False)
+
 # %%
 import folium
 
@@ -337,6 +368,7 @@ map_df = map_df.to_crs(epsg=4326)
 # center on Travis County roughly
 m = folium.Map(location=[30.3, -97.75], zoom_start=10)
 
+# choropleth layer
 folium.Choropleth(
     geo_data=map_df,
     data=map_df,
@@ -346,6 +378,25 @@ folium.Choropleth(
     fill_opacity=0.7,
     line_opacity=0.2,
     legend_name="Median Household Income",
+).add_to(m)
+
+# popup layer for clicking shapes
+popup = folium.GeoJsonPopup(
+    fields=["GEOID", "income", "age", "undergrad", "grad"],
+    aliases=["GEOID:", "Income:", "Median Age:", "Undergrad:", "Grad:"],
+    localize=True,
+    labels=True,
+    style="background-color: white;",
+)
+
+folium.GeoJson(
+    map_df,
+    style_function=lambda feature: {
+        "color": "red",
+        "weight": 0.5,
+        "fillOpacity": 0,
+    },
+    popup=popup,
 ).add_to(m)
 
 m
