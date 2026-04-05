@@ -2,7 +2,7 @@ import geopandas as gpd
 import pandas as pd
 from shapely import wkt
 
-parks = pd.read_csv("../raw/amenities/park_borders.csv")
+parks = pd.read_csv("../raw/park_borders.csv")
 
 
 def clean_names(x):
@@ -66,4 +66,4 @@ parks["name"] = clean_names(parks["LOCATION_NAME"])
 parks = parks.drop("LOCATION_NAME", axis=1)
 parks = parks.rename(columns={"the_geom": "geometry"})
 
-parks[["name", "geometry"]].to_csv("parks.csv", index=False)
+parks[["name", "geometry"]].to_csv("../clean/parks.csv", index=False)

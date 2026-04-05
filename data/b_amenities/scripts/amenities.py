@@ -98,4 +98,6 @@ pois["lat"] = pois.geometry.y
 
 amenities = pois[["name", "lat", "lon", "type"]]
 
-amenities.to_csv("amenities.csv", index=False)
+amenities["name"] = amenities["name"].fillna(amenities["type"])
+
+amenities.to_csv("../clean/amenities.csv", index=False)
