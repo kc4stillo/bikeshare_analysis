@@ -98,4 +98,4 @@ pois["lat"] = pois.geometry.y
 
 amenities = pois[["name", "lat", "lon", "type"]]
 
-amenities.to_csv("../cleaned/amenities/amenities.csv", index=False)
+amenities.to_csv("amenities.csv", index=False)

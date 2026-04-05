@@ -66,4 +66,4 @@ parks["name"] = clean_names(parks["LOCATION_NAME"])
 parks = parks.drop("LOCATION_NAME", axis=1)
 parks = parks.rename(columns={"the_geom": "geometry"})
 
-parks[["name", "geometry"]].to_csv("../cleaned/amenities/parks.csv", index=False)
+parks[["name", "geometry"]].to_csv("parks.csv", index=False)
