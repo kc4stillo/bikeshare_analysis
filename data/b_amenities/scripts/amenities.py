@@ -1,4 +1,3 @@
-import numpy as np
 import osmnx as ox
 
 place = "Travis County, Texas, USA"
@@ -80,16 +79,7 @@ pois = pois_small[
 pois["geometry"] = pois.geometry.representative_point()
 pois = pois.drop_duplicates(subset=["geometry"])
 
-conds = [
-    pois["amenity"].notna(),
-    pois["leisure"].notna(),
-]
-choices = [
-    "amenity_" + pois["amenity"].astype(str),
-    "leisure_" + pois["leisure"].astype(str),
-]
-
-pois["type"] = np.select(conds, choices, default=np.nan)
+pois["type"] = pois["amenity"].fillna(pois["leisure"])
 
 pois = pois.drop(columns=["amenity", "leisure"]).reset_index(drop=True)
 
