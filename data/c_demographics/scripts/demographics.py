@@ -194,6 +194,29 @@ school_by_block_group_2019[
 ]
 
 # %%
+# TOTAL POPULATION BY BLOCK GROUP
+population_df_2024 = api_lookup("B01003")
+
+population_by_block_group_2024 = population_df_2024[
+    ["NAME", "B01003_001E", "GEOID"]
+].sort_values("B01003_001E")
+
+population_by_block_group_2024.columns = ["name", "total_population_2024", "geoid"]
+
+population_by_block_group_2024["total_population_2024"] = clean_attribute(
+    population_by_block_group_2024["total_population_2024"]
+)
+
+# sanity check: looking at wampus
+population_by_block_group_2024[
+    population_by_block_group_2024["name"].str.contains(
+        "Block Group 2; Census Tract 6."
+    )
+]
+
+population_by_block_group_2024 = population_by_block_group_2024.drop("name", axis=1)
+
+# %%
 # combining to find all geoid
 df = pd.concat(
     [
@@ -203,6 +226,7 @@ df = pd.concat(
         income_by_block_group_2019[["geoid"]],
         school_by_block_group_2024[["geoid"]],
         school_by_block_group_2019[["geoid"]],
+        population_by_block_group_2024[["geoid"]],
     ],
     ignore_index=True,
 )
@@ -217,6 +241,7 @@ df = (
     df.merge(age_by_block_group_2024, on="geoid", how="left")
     .merge(income_by_block_group_2024, on="geoid", how="left")
     .merge(school_by_block_group_2024, on="geoid", how="left")
+    .merge(population_by_block_group_2024, on="geoid", how="left")
 )
 
 # %%
@@ -254,11 +279,13 @@ plt.hist(df["median_age_2024"])
 plt.hist(df["count_undergrad_2024"])
 plt.hist(df["count_grad_2024"])
 plt.hist(df["median_household_income_2024"])
+plt.hist(df["total_population_2024"])
 
 # %%
 df = df[
     [
         "geoid",
+        "total_population_2024",
         "median_age_2024",
         "median_household_income_2024",
         "count_undergrad_2024",
@@ -266,7 +293,7 @@ df = df[
     ]
 ]
 
-df.columns = ["geoid", "age", "income", "undergrad", "grad"]
+df.columns = ["geoid", "population", "age", "income", "undergrad", "grad"]
 
 # name template: Block Group 1; Census Tract 1.01; Travis County; Texas
 # missing_rows = pd.DataFrame(
@@ -325,11 +352,11 @@ df["geoid"] = df["geoid"].astype(str)
 
 # %%
 # load block group shapefile
-bg_shapes = gpd.read_file("../raw/block_shapes/tl_2024_48_bg.shp")
+bg_shapes = gpd.read_file("../../z_block_shapes/tl_2024_48_bg.shp")
 
 # %%
 # inspect columns
-print(bg_shapes.columns)J
+print(bg_shapes.columns)
 print(bg_shapes.head())
 
 # %%
@@ -352,12 +379,12 @@ map_df = bg_shapes.merge(
 )
 
 # %%
-print(map_df[["GEOID", "age", "income", "undergrad", "grad"]].head())
+print(map_df[["GEOID", "population", "age", "income", "undergrad", "grad"]].head())
 print(map_df.shape)
 
-df = map_df[["age", "income", "undergrad", "grad", "geometry"]]
+df = map_df[["age", "population", "income", "undergrad", "grad", "geometry"]]
 
-df.to_csv("../cleaned/demographics/demographics.csv", index=False)
+df.to_csv("../clean/demographics.csv", index=False)
 
 # %%
 import folium
@@ -382,8 +409,8 @@ folium.Choropleth(
 
 # popup layer for clicking shapes
 popup = folium.GeoJsonPopup(
-    fields=["GEOID", "income", "age", "undergrad", "grad"],
-    aliases=["GEOID:", "Income:", "Median Age:", "Undergrad:", "Grad:"],
+    fields=["GEOID", "population", "income", "age", "undergrad", "grad"],
+    aliases=["GEOID:", "Population:", "Income:", "Median Age:", "Undergrad:", "Grad:"],
     localize=True,
     labels=True,
     style="background-color: white;",

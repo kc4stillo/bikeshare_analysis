@@ -376,6 +376,7 @@ df.drop(
         "Access to existing Bikeshare footprint - 1/4 mi = 3; 1/2 mi = 2; >1/2 = 1",
         "Total Score",
         "EBS STATION",
+        "Districts",
     ],
     inplace=True,
     axis=1,
@@ -395,4 +396,4 @@ df = df.rename(
 
 df.head()
 
-df.to_csv("stations.csv")
+df.to_csv("stations.csv", index=None)
