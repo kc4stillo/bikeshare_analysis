@@ -11,6 +11,7 @@ sys.path.insert(0, str(Path.cwd().parents[2]))
 from utilities import (
     area_covered_within_radius,
     avg_nearest_3_distance,
+    count_within_radius,
     nearest_distance,
     nearest_distance_to_polygons,
 )
@@ -34,6 +35,10 @@ parks = gpd.GeoDataFrame(parks, geometry="geometry", crs="EPSG:4326")
 stations = nearest_distance(stations, dining_halls, "nearest_dining_hall_m")
 stations = nearest_distance(stations, amenities, "nearest_amenity_m")
 stations = nearest_distance_to_polygons(stations, parks, "nearest_park_m")
+
+stations = count_within_radius(
+    stations, amenities, radius_m=275, output_col="count_amenities_275m"
+)
 
 stations = avg_nearest_3_distance(stations, amenities, "avg_dist_3_amenities_m")
 

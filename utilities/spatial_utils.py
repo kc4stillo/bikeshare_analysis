@@ -1,7 +1,182 @@
 import geopandas as gpd
 import numpy as np
+import pandas as pd
 from shapely import wkt
 from sklearn.neighbors import BallTree
+
+
+def count_within_radius(
+    stations,
+    points,
+    radius_m=275,
+    station_crs="EPSG:4326",
+    points_crs="EPSG:4326",
+    projected_crs=None,
+    count_col=None,
+    output_col=None,
+):
+    """
+    Add a column to stations with either:
+    - the sum of `count_col` within radius_m of each station, or
+    - the number of points within radius_m if count_col is None
+
+    Parameters
+    ----------
+    stations : pd.DataFrame
+        Must contain: ['lat', 'lon']
+    points : pd.DataFrame
+        Must contain: ['lat', 'lon']
+        If count_col is provided, must also contain that column.
+    radius_m : float, default 275
+        Radius around each station in meters
+    station_crs : str, default "EPSG:4326"
+        CRS of station lat/lon
+    points_crs : str, default "EPSG:4326"
+        CRS of point lat/lon
+    projected_crs : str or None, default None
+        Projected CRS to use for buffering in meters.
+        If None, estimated from station locations.
+    count_col : str or None, default None
+        If provided, sums this column within the radius.
+        If None, counts the number of points within the radius.
+    output_col : str or None, default None
+        Name of output column.
+        If None:
+          - uses f"{count_col}_within_{radius_m}m" when count_col is provided
+          - uses f"count_within_{radius_m}m" when count_col is None
+
+    Returns
+    -------
+    pd.DataFrame
+        Original stations DataFrame with one added column
+    """
+
+    if output_col is None:
+        if count_col is None:
+            output_col = f"count_within_{int(radius_m)}m"
+        else:
+            output_col = f"{count_col}_within_{int(radius_m)}m"
+
+    stations_out = stations.copy()
+    points_out = points.copy()
+
+    # -----------------------------
+    # Validate required columns
+    # -----------------------------
+    required_station_cols = {"lat", "lon"}
+    required_point_cols = {"lat", "lon"}
+
+    if count_col is not None:
+        required_point_cols.add(count_col)
+
+    missing_station = required_station_cols - set(stations_out.columns)
+    missing_points = required_point_cols - set(points_out.columns)
+
+    if missing_station:
+        raise ValueError(f"stations is missing required columns: {missing_station}")
+    if missing_points:
+        raise ValueError(f"points is missing required columns: {missing_points}")
+
+    # -----------------------------
+    # Clean numeric columns
+    # -----------------------------
+    for col in ["lat", "lon"]:
+        stations_out[col] = pd.to_numeric(stations_out[col], errors="coerce")
+        points_out[col] = pd.to_numeric(points_out[col], errors="coerce")
+
+    if count_col is not None:
+        points_out[count_col] = pd.to_numeric(points_out[count_col], errors="coerce")
+
+    if stations_out[["lat", "lon"]].isna().any().any():
+        raise ValueError("stations has invalid lat/lon values.")
+    if points_out[["lat", "lon"]].isna().any().any():
+        raise ValueError("points has invalid lat/lon values.")
+    if count_col is not None and points_out[count_col].isna().any():
+        raise ValueError(f"points column '{count_col}' has invalid or missing values.")
+
+    # -----------------------------
+    # Build GeoDataFrames
+    # -----------------------------
+    station_gdf = gpd.GeoDataFrame(
+        stations_out.copy(),
+        geometry=gpd.points_from_xy(stations_out["lon"], stations_out["lat"]),
+        crs=station_crs,
+    ).reset_index(drop=True)
+
+    point_gdf = gpd.GeoDataFrame(
+        points_out.copy(),
+        geometry=gpd.points_from_xy(points_out["lon"], points_out["lat"]),
+        crs=points_crs,
+    ).reset_index(drop=True)
+
+    station_gdf["_station_id"] = station_gdf.index
+
+    # -----------------------------
+    # Pick projected CRS for meter-based buffering
+    # -----------------------------
+    if projected_crs is None:
+        try:
+            projected_crs = station_gdf.estimate_utm_crs()
+        except Exception:
+            projected_crs = "EPSG:32614"
+
+    station_proj = station_gdf.to_crs(projected_crs)
+    point_proj = point_gdf.to_crs(projected_crs)
+
+    # -----------------------------
+    # Buffer stations by radius_m
+    # -----------------------------
+    station_buffers = station_proj[["_station_id", "geometry"]].copy()
+    station_buffers["geometry"] = station_buffers.geometry.buffer(radius_m)
+
+    # -----------------------------
+    # Spatial join: points inside each station buffer
+    # -----------------------------
+    join_cols = ["geometry"] if count_col is None else [count_col, "geometry"]
+
+    joined = gpd.sjoin(
+        point_proj[join_cols],
+        station_buffers,
+        how="left",
+        predicate="intersects",
+    ).drop(columns=["index_right"], errors="ignore")
+
+    joined = joined[joined["_station_id"].notna()].copy()
+
+    # -----------------------------
+    # Aggregate by station
+    # -----------------------------
+    if joined.empty:
+        agg = pd.Series(0, index=station_gdf["_station_id"], name=output_col)
+    else:
+        if count_col is None:
+            agg = (
+                joined.groupby("_station_id")
+                .size()
+                .reindex(station_gdf["_station_id"], fill_value=0)
+                .rename(output_col)
+            )
+        else:
+            agg = (
+                joined.groupby("_station_id")[count_col]
+                .sum()
+                .reindex(station_gdf["_station_id"], fill_value=0)
+                .rename(output_col)
+            )
+
+    # -----------------------------
+    # Merge back to original stations
+    # -----------------------------
+    result = station_gdf.drop(columns=["geometry"]).merge(
+        agg.reset_index(),
+        on="_station_id",
+        how="left",
+    )
+
+    result[output_col] = result[output_col].fillna(0)
+    result = result.drop(columns=["_station_id"], errors="ignore")
+
+    return result
 
 
 def nearest_distance(stations, new_df, new_col):
@@ -86,52 +261,6 @@ def avg_nearest_3_distance(stations, new_df, new_col):
 
     # Convert from radians to meters, then average across nearest neighbors
     stations_out[new_col] = distances.mean(axis=1) * earth_radius_m
-
-    return stations_out
-
-
-def counts_within_radius(stations, new_df, new_col, radius_m=275):
-    """
-    Add a column to `stations` with the number of objects within `radius_m` meters.
-
-    Parameters
-    ----------
-    stations : pd.DataFrame
-        Must contain 'lat' and 'lon' columns.
-    new_df : pd.DataFrame
-        Must contain 'lat' and 'lon' columns.
-    radius_m : float, default=275
-        Search radius in meters.
-    new_col : str
-        Name of new column
-
-    Returns
-    -------
-    pd.DataFrame
-        Copy of stations with a new column:
-        - 'new_col'
-    """
-    stations_out = stations.copy()
-
-    # Earth radius in meters
-    earth_radius_m = 6_371_000
-
-    # Convert lat/lon to radians for haversine distance
-    station_coords = np.radians(stations_out[["lat", "lon"]].to_numpy())
-    new_coords = np.radians(new_df[["lat", "lon"]].to_numpy())
-
-    # Build BallTree on amenity coordinates
-    tree = BallTree(new_coords, metric="haversine")
-
-    # Radius in radians
-    radius_rad = radius_m / earth_radius_m
-
-    # Find new_df within radius for each station
-    indices = tree.query_radius(station_coords, r=radius_rad)
-
-    # Count new_df for each station
-    col_name = new_col
-    stations_out[col_name] = [len(i) for i in indices]
 
     return stations_out
 
