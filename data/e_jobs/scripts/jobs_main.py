@@ -35,8 +35,12 @@ jobs.head()
 # 4	11	30.321450	-97.748465
 
 
-stations = count_within_radius(stations, jobs, radius_m=275)
-stations = count_within_radius(stations, jobs, radius_m=550)
+stations = count_within_radius(
+    stations, jobs, radius_m=275, output_col="jobs_count_within_275m"
+)
+stations = count_within_radius(
+    stations, jobs, radius_m=550, output_col="jobs_count_within_275m"
+)
 
 # %%
 stations.to_csv("../clean/stations.csv", index=False)

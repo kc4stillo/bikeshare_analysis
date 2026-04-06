@@ -5,6 +5,351 @@ from shapely import wkt
 from sklearn.neighbors import BallTree
 
 
+def count_stations_within_radius(
+    stations,
+    radius_m=550,
+    output_col=None,
+    station_crs="EPSG:4326",
+    projected_crs=None,
+):
+    """
+    Add a column to stations with the number of OTHER stations within radius_m,
+    excluding the station itself.
+
+    Parameters
+    ----------
+    stations : pd.DataFrame
+        Must contain: ['lat', 'lon']
+    radius_m : float, default 550
+        Radius around each station in meters
+    output_col : str or None, default None
+        Name of output column.
+        If None, uses f"stations_within_{radius_m}m"
+    station_crs : str, default "EPSG:4326"
+        CRS of station lat/lon
+    projected_crs : str or None, default None
+        Projected CRS to use for buffering in meters.
+        If None, estimated from station locations.
+
+    Returns
+    -------
+    pd.DataFrame
+        Original stations DataFrame with one added column
+    """
+
+    if output_col is None:
+        output_col = f"stations_within_{int(radius_m)}m"
+
+    stations_out = stations.copy()
+
+    # -----------------------------
+    # Validate required columns
+    # -----------------------------
+    required_station_cols = {"lat", "lon"}
+    missing_station = required_station_cols - set(stations_out.columns)
+
+    if missing_station:
+        raise ValueError(f"stations is missing required columns: {missing_station}")
+
+    if radius_m < 0:
+        raise ValueError("radius_m must be non-negative.")
+
+    # -----------------------------
+    # Clean numeric columns
+    # -----------------------------
+    for col in ["lat", "lon"]:
+        stations_out[col] = pd.to_numeric(stations_out[col], errors="coerce")
+
+    if stations_out[["lat", "lon"]].isna().any().any():
+        raise ValueError("stations has invalid lat/lon values.")
+
+    # -----------------------------
+    # Build GeoDataFrame
+    # -----------------------------
+    station_gdf = gpd.GeoDataFrame(
+        stations_out.copy(),
+        geometry=gpd.points_from_xy(stations_out["lon"], stations_out["lat"]),
+        crs=station_crs,
+    ).reset_index(drop=True)
+
+    station_gdf["_station_id"] = station_gdf.index
+
+    # -----------------------------
+    # Pick projected CRS for meter-based buffering
+    # -----------------------------
+    if projected_crs is None:
+        try:
+            projected_crs = station_gdf.estimate_utm_crs()
+        except Exception:
+            projected_crs = "EPSG:32614"
+
+    station_proj = station_gdf.to_crs(projected_crs)
+
+    # -----------------------------
+    # Create buffers around each station
+    # -----------------------------
+    station_buffers = station_proj[["_station_id", "geometry"]].copy()
+    station_buffers["geometry"] = station_buffers.geometry.buffer(radius_m)
+
+    # Rename point-side station id so we can distinguish
+    station_points = station_proj[["_station_id", "geometry"]].copy()
+    station_points = station_points.rename(columns={"_station_id": "_other_station_id"})
+
+    # -----------------------------
+    # Spatial join: which station points fall inside each station buffer
+    # -----------------------------
+    joined = gpd.sjoin(
+        station_points,
+        station_buffers,
+        how="left",
+        predicate="intersects",
+    ).drop(columns=["index_right"], errors="ignore")
+
+    # -----------------------------
+    # Exclude self-matches
+    # -----------------------------
+    joined = joined[joined["_station_id"].notna()].copy()
+    joined = joined[joined["_other_station_id"] != joined["_station_id"]].copy()
+
+    # -----------------------------
+    # Count other stations per station
+    # -----------------------------
+    counts = (
+        joined.groupby("_station_id")
+        .size()
+        .reindex(station_gdf["_station_id"], fill_value=0)
+        .rename(output_col)
+    )
+
+    # -----------------------------
+    # Merge back to original stations
+    # -----------------------------
+    result = station_gdf.drop(columns=["geometry"]).merge(
+        counts.reset_index(),
+        on="_station_id",
+        how="left",
+    )
+
+    result[output_col] = result[output_col].fillna(0).astype(int)
+    result = result.drop(columns=["_station_id"], errors="ignore")
+
+    return result
+
+
+def avg_distance_k_nearest_stations(
+    stations,
+    k=3,
+    output_col=None,
+    station_crs="EPSG:4326",
+    projected_crs=None,
+):
+    """
+    Add a column to stations with the average distance (in meters) to the
+    k nearest other stations, excluding itself.
+
+    Parameters
+    ----------
+    stations : pd.DataFrame
+        Must contain: ['lat', 'lon']
+    k : int, default 3
+        Number of nearest other stations to average
+    output_col : str or None, default None
+        Name of output column.
+        If None, uses f"avg_dist_{k}_nearest_stations_m"
+    station_crs : str, default "EPSG:4326"
+        CRS of station lat/lon
+    projected_crs : str or None, default None
+        Projected CRS to use for distance calculations in meters.
+        If None, estimated from station locations.
+
+    Returns
+    -------
+    pd.DataFrame
+        Original stations DataFrame with one added column
+    """
+
+    if output_col is None:
+        output_col = f"avg_dist_{k}_nearest_stations_m"
+
+    stations_out = stations.copy()
+
+    # -----------------------------
+    # Validate required columns
+    # -----------------------------
+    required_station_cols = {"lat", "lon"}
+    missing_station = required_station_cols - set(stations_out.columns)
+
+    if missing_station:
+        raise ValueError(f"stations is missing required columns: {missing_station}")
+
+    if not isinstance(k, int) or k < 1:
+        raise ValueError("k must be a positive integer.")
+
+    if len(stations_out) <= k:
+        raise ValueError(
+            f"stations must contain at least {k + 1} rows to compute the "
+            f"average distance to {k} nearest other stations."
+        )
+
+    # -----------------------------
+    # Clean numeric columns
+    # -----------------------------
+    for col in ["lat", "lon"]:
+        stations_out[col] = pd.to_numeric(stations_out[col], errors="coerce")
+
+    if stations_out[["lat", "lon"]].isna().any().any():
+        raise ValueError("stations has invalid lat/lon values.")
+
+    # -----------------------------
+    # Build GeoDataFrame
+    # -----------------------------
+    station_gdf = gpd.GeoDataFrame(
+        stations_out.copy(),
+        geometry=gpd.points_from_xy(stations_out["lon"], stations_out["lat"]),
+        crs=station_crs,
+    ).reset_index(drop=True)
+
+    # -----------------------------
+    # Pick projected CRS for meter-based distances
+    # -----------------------------
+    if projected_crs is None:
+        try:
+            projected_crs = station_gdf.estimate_utm_crs()
+        except Exception:
+            projected_crs = "EPSG:32614"
+
+    station_proj = station_gdf.to_crs(projected_crs)
+
+    # -----------------------------
+    # Extract x/y coordinates
+    # -----------------------------
+    coords = np.column_stack((station_proj.geometry.x, station_proj.geometry.y))
+
+    # -----------------------------
+    # Pairwise distance matrix
+    # -----------------------------
+    dx = coords[:, 0][:, None] - coords[:, 0][None, :]
+    dy = coords[:, 1][:, None] - coords[:, 1][None, :]
+    dist_matrix = np.sqrt(dx**2 + dy**2)
+
+    # Ignore self-distance
+    np.fill_diagonal(dist_matrix, np.inf)
+
+    # -----------------------------
+    # Average of k nearest other stations
+    # -----------------------------
+    k_nearest = np.partition(dist_matrix, kth=k - 1, axis=1)[:, :k]
+    avg_k_nearest = k_nearest.mean(axis=1)
+
+    # -----------------------------
+    # Attach result
+    # -----------------------------
+    result = station_gdf.drop(columns=["geometry"]).copy()
+    result[output_col] = avg_k_nearest
+
+    return result
+
+
+def nearest_station_distance(
+    stations,
+    output_col="nearest_station_m",
+    station_crs="EPSG:4326",
+    projected_crs=None,
+):
+    """
+    Add a column to stations with the distance (in meters) to the nearest
+    other station, excluding itself.
+
+    Parameters
+    ----------
+    stations : pd.DataFrame
+        Must contain: ['lat', 'lon']
+    output_col : str, default "nearest_station_m"
+        Name of output column
+    station_crs : str, default "EPSG:4326"
+        CRS of station lat/lon
+    projected_crs : str or None, default None
+        Projected CRS to use for distance calculations in meters.
+        If None, estimated from station locations.
+
+    Returns
+    -------
+    pd.DataFrame
+        Original stations DataFrame with one added column
+    """
+
+    stations_out = stations.copy()
+
+    # -----------------------------
+    # Validate required columns
+    # -----------------------------
+    required_station_cols = {"lat", "lon"}
+    missing_station = required_station_cols - set(stations_out.columns)
+
+    if missing_station:
+        raise ValueError(f"stations is missing required columns: {missing_station}")
+
+    if len(stations_out) < 2:
+        raise ValueError(
+            "stations must contain at least 2 rows to compute nearest-station distance."
+        )
+
+    # -----------------------------
+    # Clean numeric columns
+    # -----------------------------
+    for col in ["lat", "lon"]:
+        stations_out[col] = pd.to_numeric(stations_out[col], errors="coerce")
+
+    if stations_out[["lat", "lon"]].isna().any().any():
+        raise ValueError("stations has invalid lat/lon values.")
+
+    # -----------------------------
+    # Build GeoDataFrame
+    # -----------------------------
+    station_gdf = gpd.GeoDataFrame(
+        stations_out.copy(),
+        geometry=gpd.points_from_xy(stations_out["lon"], stations_out["lat"]),
+        crs=station_crs,
+    ).reset_index(drop=True)
+
+    # -----------------------------
+    # Pick projected CRS for meter-based distances
+    # -----------------------------
+    if projected_crs is None:
+        try:
+            projected_crs = station_gdf.estimate_utm_crs()
+        except Exception:
+            projected_crs = "EPSG:32614"
+
+    station_proj = station_gdf.to_crs(projected_crs)
+
+    # -----------------------------
+    # Extract x/y coordinates
+    # -----------------------------
+    coords = np.column_stack((station_proj.geometry.x, station_proj.geometry.y))
+
+    # -----------------------------
+    # Pairwise distance matrix
+    # -----------------------------
+    dx = coords[:, 0][:, None] - coords[:, 0][None, :]
+    dy = coords[:, 1][:, None] - coords[:, 1][None, :]
+    dist_matrix = np.sqrt(dx**2 + dy**2)
+
+    # Ignore self-distance by setting diagonal to infinity
+    np.fill_diagonal(dist_matrix, np.inf)
+
+    # Nearest other station distance
+    nearest_dist = dist_matrix.min(axis=1)
+
+    # -----------------------------
+    # Attach result
+    # -----------------------------
+    result = station_gdf.drop(columns=["geometry"]).copy()
+    result[output_col] = nearest_dist
+
+    return result
+
+
 def count_within_radius(
     stations,
     points,
