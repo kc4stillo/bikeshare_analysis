@@ -26,6 +26,7 @@ ml_df = df.drop(
         "lat",
         "lon",
         "north_campus_area_within_275m",
+        "north_campus_area_within_550m",
         "west_campus_area_within_825m",
         "north_campus_area_within_550m",
         "undergrad",
