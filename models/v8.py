@@ -19,7 +19,19 @@ df = pd.read_csv("../data/g_transit/clean/stations.csv")
 station_names = df["name"]
 
 # model dataset
-ml_df = df.drop(columns=["name", "trips", "lat", "lon"])
+ml_df = df.drop(
+    columns=[
+        "name",
+        "trips",
+        "lat",
+        "lon",
+        "north_campus_area_within_275m",
+        "west_campus_area_within_825m",
+        "north_campus_area_within_550m",
+        "undergrad",
+        "grad",
+    ]
+)
 
 # target on original scale
 y = ml_df["trips_per_dock"]

@@ -23,9 +23,6 @@ stations = pd.read_csv("../../f_retail/clean/stations.csv")
 stations_right = pd.read_csv("../../a_stations/stations.csv")
 transit_stops = pd.read_csv("../clean/transit.csv")
 
-bus_stops = transit_stops[transit_stops["type"] == "bus"]
-rail_stops = transit_stops[transit_stops["type"] == "rail"]
-
 # %%
 stations = nearest_station_distance(stations, "nearest_bikeshare_station_m")
 stations = avg_distance_k_nearest_stations(
@@ -38,25 +35,16 @@ stations = count_stations_within_radius(
     stations, radius_m=550, output_col="bikeshare_station_count_within_550m"
 )
 
-stations = nearest_distance(stations, bus_stops, new_col="nearest_bus_stop_distance_m")
-
-stations = count_within_radius(
-    stations, bus_stops, radius_m=275, output_col="count_bus_stop_275m"
-)
-stations = count_within_radius(
-    stations, bus_stops, radius_m=550, output_col="count_bus_stop_550m"
-)
-
 stations = nearest_distance(
-    stations, rail_stops, new_col="nearest_rail_stop_distance_m"
-)
-stations = count_within_radius(
-    stations, rail_stops, radius_m=275, output_col="count_rail_stop_275m"
-)
-stations = count_within_radius(
-    stations, rail_stops, radius_m=550, output_col="count_rail_stop_550m"
+    stations, transit_stops, new_col="nearest_transit_stop_distance_m"
 )
 
+stations = count_within_radius(
+    stations, transit_stops, radius_m=275, output_col="count_transit_stop_275m"
+)
+stations = count_within_radius(
+    stations, transit_stops, radius_m=550, output_col="count_transit_stop_550m"
+)
 
 stations.head()
 

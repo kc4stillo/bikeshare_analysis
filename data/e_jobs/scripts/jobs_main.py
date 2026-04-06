@@ -1,5 +1,4 @@
 # JOBS
-
 import sys
 from pathlib import Path
 
@@ -39,7 +38,7 @@ stations = count_within_radius(
     stations, jobs, radius_m=275, output_col="jobs_count_within_275m"
 )
 stations = count_within_radius(
-    stations, jobs, radius_m=550, output_col="jobs_count_within_275m"
+    stations, jobs, radius_m=550, output_col="jobs_count_within_550m"
 )
 
 # %%
