@@ -45,6 +45,8 @@ stations = area_covered_within_radius(
 stations = area_covered_within_radius(
     stations, north_campus, radius_m=550, new_col="north_campus_area_within_550m"
 )
+
+
 stations = area_covered_within_radius(
     stations, west_campus, "west_campus_area_within_275m"
 )
@@ -54,10 +56,17 @@ stations = area_covered_within_radius(
 stations = area_covered_within_radius(
     stations, west_campus, radius_m=825, new_col="west_campus_area_within_825m"
 )
-stations = nearest_distance_to_polygons(stations, ut, "distance_to_ut_m")
 stations = nearest_distance_to_polygons(
     stations, west_campus, "distance_to_west_campus_m"
 )
+
+
+stations = nearest_distance_to_polygons(stations, ut, "distance_to_ut_m")
+stations = area_covered_within_radius(stations, ut, "ut_area_within_275m")
+stations = area_covered_within_radius(
+    stations, ut, radius_m=550, new_col="ut_area_within_550m"
+)
+
 
 # %%
 stations.to_csv("../clean/stations.csv", index=False)

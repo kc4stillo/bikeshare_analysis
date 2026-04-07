@@ -45,6 +45,7 @@ W_28_RIO_LON = -97.744154
 DOCKS = 3
 
 
+# %%
 def find_nearest_point(lat, lon, df, lat_col="lat", lon_col="lon", return_row=False):
     """
     Given a lat/lon, find the distance in meters to the nearest row in df.
@@ -517,6 +518,9 @@ def get_polygon_attributes_with_nearest_fill(
     return result_series
 
 
+# %%
+# TESTS
+
 # nearest_dining_hall_m
 find_nearest_point(BARTON_LAT, BARTON_LON, dining_halls)  # ACTUAL POINT: 3903.249201
 
@@ -626,3 +630,60 @@ count_points_within_radius(
 )  # ACTUAL POINT: 43
 
 # nearest_retail_m
+find_nearest_point(BARTON_LAT, BARTON_LON, retail)  # ACTUAL POINT 104.737875
+find_nearest_point(W_28_RIO_LAT, W_28_RIO_LON, retail)  # ACTUAL POINT 193.407332
+
+# count_retail_275m
+count_points_within_radius(
+    BARTON_LAT, BARTON_LON, retail, radius_m=275
+)  # ACTUAL POINT: 3
+count_points_within_radius(
+    W_28_RIO_LAT, W_28_RIO_LON, retail, radius_m=275
+)  # ACTUAL POINT: 15
+
+# count_retail_550m
+count_points_within_radius(
+    BARTON_LAT, BARTON_LON, retail, radius_m=550
+)  # ACTUAL POINT: 8
+count_points_within_radius(
+    W_28_RIO_LAT, W_28_RIO_LON, retail, radius_m=550
+)  # ACTUAL POINT: 46
+
+# avg_dist_3_retail_m
+average_distance_to_3_nearest(
+    BARTON_LAT, BARTON_LON, retail
+)  # ACTUAL POINT: 148.193271
+average_distance_to_3_nearest(
+    W_28_RIO_LAT, W_28_RIO_LON, retail
+)  # ACTUAL POINT: 206.850626
+
+# nearest_bikeshare_station_m
+find_nearest_point(BARTON_LAT, BARTON_LON, stations)  # ACTUAL POINT: 330.746518
+
+# avg_dist_3_statoins
+average_distance_to_3_nearest(
+    BARTON_LAT, BARTON_LON, stations
+)  # ACTUAL POINT: 565.399790
+
+# bikeshare_station_count_within_275m
+count_points_within_radius(
+    BARTON_LAT, BARTON_LON, stations, radius_m=275
+)  # ACTUAL POINT: 0
+
+# bikeshare_station_count_within_550m
+count_points_within_radius(
+    BARTON_LAT, BARTON_LON, stations, radius_m=550
+)  # ACTUAL POINT: 2
+
+# nearest_transit_stop_distance_m
+find_nearest_point(BARTON_LAT, BARTON_LON, tranit)  # 335.767553
+
+# count_transit_stop_275m
+count_points_within_radius(
+    BARTON_LAT, BARTON_LON, tranit, radius_m=275
+)  # ACTUAL POINT: 0
+
+# count_transit_stop_550m
+count_points_within_radius(
+    BARTON_LAT, BARTON_LON, tranit, radius_m=550
+)  # ACTUAL POINT: 4

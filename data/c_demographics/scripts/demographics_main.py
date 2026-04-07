@@ -26,10 +26,19 @@ demographics = gpd.GeoDataFrame(demographics, geometry="geometry", crs="EPSG:432
 stations = attach_polygon_stats(
     stations=stations,
     polygon_gdf=demographics,
-    polygon_cols=("age", "income", "population", "undergrad", "grad"),
+    polygon_cols=(
+        "median_age",
+        "median_income",
+        "count_population",
+        "count_undergrad",
+        "count_grad",
+        "population_density",
+    ),
 )
 
-stations["undergrad_percentage"] = stations["undergrad"] / stations["population"]
-stations["grad_percentage"] = stations["grad"] / stations["population"]
+stations["undergrad_percentage"] = (
+    stations["count_undergrad"] / stations["count_population"]
+)
+stations["grad_percentage"] = stations["count_grad"] / stations["count_population"]
 
 stations.to_csv("../clean/stations.csv", index=False)

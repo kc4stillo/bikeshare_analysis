@@ -293,7 +293,14 @@ df = df[
     ]
 ]
 
-df.columns = ["geoid", "population", "age", "income", "undergrad", "grad"]
+df.columns = [
+    "geoid",
+    "count_population",
+    "median_age",
+    "median_income",
+    "count_undergrad",
+    "count_grad",
+]
 
 # name template: Block Group 1; Census Tract 1.01; Travis County; Texas
 # missing_rows = pd.DataFrame(
@@ -327,14 +334,14 @@ df.columns = ["geoid", "population", "age", "income", "undergrad", "grad"]
 # df = pd.concat([[df, missing_rows]])
 
 ### TESTING HARD CODED ADDED VALUES
-df.loc[df["geoid"] == "484530006053", "income"] = 17656
-df.loc[df["geoid"] == "484530006062", "income"] = 5287
-df.loc[df["geoid"] == "484530006064", "income"] = 4823
-df.loc[df["geoid"] == "484530006063", "income"] = 2499
-df.loc[df["geoid"] == "484530006072", "income"] = 8761
-df.loc[df["geoid"] == "484530006051", "income"] = 7000
-df.loc[df["geoid"] == "484530006071", "income"] = 9000
-df.loc[df["geoid"] == "484530011011", "income"] = 114115
+df.loc[df["geoid"] == "484530006053", "median_income"] = 17656
+df.loc[df["geoid"] == "484530006062", "median_income"] = 5287
+df.loc[df["geoid"] == "484530006064", "median_income"] = 4823
+df.loc[df["geoid"] == "484530006063", "median_income"] = 2499
+df.loc[df["geoid"] == "484530006072", "median_income"] = 8761
+df.loc[df["geoid"] == "484530006051", "median_income"] = 7000
+df.loc[df["geoid"] == "484530006071", "median_income"] = 9000
+df.loc[df["geoid"] == "484530011011", "median_income"] = 114115
 
 # df = df.dropna()
 
@@ -379,10 +386,25 @@ map_df = bg_shapes.merge(
 )
 
 # %%
-print(map_df[["GEOID", "population", "age", "income", "undergrad", "grad"]].head())
-print(map_df.shape)
+# print(map_df[["GEOID", "population", "age", "income", "undergrad", "grad"]].head())
+# print(map_df.shape)
 
-df = map_df[["age", "population", "income", "undergrad", "grad", "geometry"]]
+df = map_df[
+    [
+        "geometry",
+        "median_age",
+        "count_population",
+        "median_income",
+        "count_undergrad",
+        "count_grad",
+    ]
+]
+
+df = gpd.GeoDataFrame(df, geometry="geometry", crs="EPSG:4326")
+df["area_m2"] = df.to_crs(epsg=26914).geometry.area
+df["population_density"] = df["count_population"] / df["area_m2"]
+
+df.head()
 
 df.to_csv("../clean/demographics.csv", index=False)
 
