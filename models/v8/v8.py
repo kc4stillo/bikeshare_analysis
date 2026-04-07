@@ -13,7 +13,7 @@ pd.set_option("display.max_colwidth", None)
 # -----------------------------
 # Load data
 # -----------------------------
-df = pd.read_csv("../data/g_transit/clean/stations.csv")
+df = pd.read_csv("../../data/g_transit/clean/stations.csv")
 
 # keep station names for the residual table
 station_names = df["name"]
@@ -29,8 +29,9 @@ ml_df = df.drop(
         "north_campus_area_within_550m",
         "west_campus_area_within_825m",
         "north_campus_area_within_550m",
-        "undergrad",
-        "grad",
+        "count_undergrad",
+        "count_grad",
+        "bikeable_infrastructure",
     ]
 )
 
@@ -153,3 +154,15 @@ feature_importance = pd.DataFrame(
 print("\nMost Important Features")
 print("-" * 40)
 print(feature_importance.to_string(index=False))
+
+# %%
+import json
+
+import joblib
+
+# save trained model
+joblib.dump(model, "xgb_trips_per_dock.pkl")
+
+# save exact training column order
+with open("xgb_feature_columns.json", "w") as f:
+    json.dump(X.columns.tolist(), f)

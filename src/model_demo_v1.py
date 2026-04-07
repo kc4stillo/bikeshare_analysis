@@ -14,23 +14,25 @@ ut_shape = pd.read_csv("../data/d_ut_shapes/clean/ut_shape.csv")
 west_campus = pd.read_csv("../data/d_ut_shapes/clean/west_campus.csv")
 jobs = pd.read_csv("../data/e_jobs/clean/jobs.csv")
 retail = pd.read_csv("../data/f_retail/clean/retail.csv")
-tranit = pd.read_csv("../data/g_transit/clean/transit.csv")
+transit = pd.read_csv("../data/g_transit/clean/transit.csv")
+
+# %%
+future_station_name = "e_8th_neches"
+lat = 30.26927461840212
+lon = -97.73618510965271
+docks = 7
 
 # %%
 # convert pd to geopandas df
-parks = parks.copy()
 parks["geometry"] = parks["geometry"].apply(wkt.loads)
 parks = gpd.GeoDataFrame(parks, geometry="geometry", crs="EPSG:4326")
 
-demographics = demographics.copy()
 demographics["geometry"] = demographics["geometry"].apply(wkt.loads)
 demographics = gpd.GeoDataFrame(demographics, geometry="geometry", crs="EPSG:4326")
 
-west_campus = west_campus.copy()
 west_campus["geometry"] = west_campus["geometry"].apply(wkt.loads)
 west_campus = gpd.GeoDataFrame(west_campus, geometry="geometry", crs="EPSG:4326")
 
-ut_shape = ut_shape.copy()
 ut_shape["geometry"] = ut_shape["geometry"].apply(wkt.loads)
 ut_shape = gpd.GeoDataFrame(ut_shape, geometry="geometry", crs="EPSG:4326")
 
@@ -41,8 +43,6 @@ BARTON_LON = -97.771359
 # w_28th_rio lat/lon
 W_28_RIO_LAT = 30.293155
 W_28_RIO_LON = -97.744154
-
-DOCKS = 3
 
 
 # %%
@@ -518,172 +518,227 @@ def get_polygon_attributes_with_nearest_fill(
     return result_series
 
 
+area_occupied_within_radius(30.289310, -97.733037, ut_shape, radius_m=275)
+area_occupied_within_radius(30.289310, -97.733037, ut_shape, radius_m=550)
+
 # %%
-# TESTS
+import json
 
-# nearest_dining_hall_m
-find_nearest_point(BARTON_LAT, BARTON_LON, dining_halls)  # ACTUAL POINT: 3903.249201
+import joblib
+import pandas as pd
 
-# nearest_amenity_m
-find_nearest_point(BARTON_LAT, BARTON_LON, amenities)  # ACTUAL POINT: 48.268192
+# load trained model
+model = joblib.load("../models/v8/xgb_trips_per_dock.pkl")
 
-# nearest_park_m
-find_nearest_geometry_distance(BARTON_LAT, BARTON_LON, parks)  # ACTUAL POINT: 0.000000
-find_nearest_geometry_distance(
-    W_28_RIO_LAT, W_28_RIO_LON, parks
-)  # ACTUAL POINT: 213.600323
+# load exact column order used during training
+with open("../models/v8/xgb_feature_columns.json", "r") as f:
+    feature_cols = json.load(f)
 
-# count_amenities_275m
-count_points_within_radius(
-    BARTON_LAT, BARTON_LON, amenities, radius_m=275
-)  # ACTUAL POINT: 4
-count_points_within_radius(
-    W_28_RIO_LAT, W_28_RIO_LON, amenities, radius_m=275
-)  # ACTUAL POINT: 8
+feature_cols
 
-# avg_dist_3_amenities_m
-average_distance_to_3_nearest(
-    BARTON_LAT, BARTON_LON, amenities
-)  # ACTUAL POINT: 142.871452
-average_distance_to_3_nearest(
-    W_28_RIO_LAT, W_28_RIO_LON, amenities
-)  # ACTUAL POINT: 150.456597
 
-# park_area_within_275m
-area_occupied_within_radius(
-    BARTON_LAT, BARTON_LON, parks, radius_m=275
-)  # ACTUAL POINT: 234168.30868714972
-area_occupied_within_radius(
-    W_28_RIO_LAT, W_28_RIO_LON, parks, radius_m=275
-)  # ACTUAL POINT: 10559.804299
+def collect_feaures(lat, lon, docks):
+    nearest_dining_hall_m = find_nearest_point(
+        lat, lon, dining_halls
+    )  # ACTUAL POINT: 3903.249201
 
-# park_area_within_550m
-area_occupied_within_radius(
-    BARTON_LAT, BARTON_LON, parks, radius_m=550
-)  # ACTUAL POINT: 743414.143292
-area_occupied_within_radius(
-    W_28_RIO_LAT, W_28_RIO_LON, parks, radius_m=550
-)  # ACTUAL POINT: 98771.142466
+    # nearest_amenity_m
+    nearest_amenity_m = find_nearest_point(
+        lat, lon, amenities
+    )  # ACTUAL POINT: 48.268192
 
-# age, income, population, undergrad, grad
-barton_demo = get_polygon_attributes_with_nearest_fill(
-    BARTON_LAT, BARTON_LON, demographics
-)  # ACTUAL POINT: 34.4, 62031.0, 869.0, 25.0, 25.0
-rio_demo = get_polygon_attributes_with_nearest_fill(
-    W_28_RIO_LAT, W_28_RIO_LON, demographics
-)  # ACTUAL POINT: 21.9, 5287.0, 1361.0, 832.0, 362.0
+    # nearest_park_m
+    nearest_park_m = find_nearest_geometry_distance(
+        lat, lon, parks
+    )  # ACTUAL POINT: 0.000000
 
-# undergrad_percentage
-barton_demo["undergrad"] / barton_demo["population"]  # ACTUAL POINT : 0.028769
-rio_demo["undergrad"] / rio_demo["population"]  # ACTUAL POINT: 0.611315
+    # count_amenities_275m
+    count_amenities_275m = count_points_within_radius(
+        lat, lon, amenities, radius_m=275
+    )  # ACTUAL POINT: 4
 
-# grad_percentage
-barton_demo["grad"] / barton_demo["population"]  # ACTUAL POINT : 0.028769
-rio_demo["grad"] / rio_demo["population"]  # ACTUAL POINT: 0.265981
+    # avg_dist_3_amenities_m
+    avg_dist_3_amenities_m = average_distance_to_3_nearest(
+        lat, lon, amenities
+    )  # ACTUAL POINT: 142.871452
 
-# west_campus_area_within_275m
-area_occupied_within_radius(
-    BARTON_LAT, BARTON_LON, west_campus, radius_m=275
-)  # ACTUAL POINT: 0.000000
-area_occupied_within_radius(
-    W_28_RIO_LAT, W_28_RIO_LON, west_campus, radius_m=275
-)  # ACTUAL POINT: 226687.546182
+    # park_area_within_275m
+    park_area_within_275m = area_occupied_within_radius(
+        lat, lon, parks, radius_m=275
+    )  # ACTUAL POINT: 234168.30868714972
 
-# west_campus_area_within_550m
-area_occupied_within_radius(
-    BARTON_LAT, BARTON_LON, west_campus, radius_m=550
-)  # ACTUAL POINT: 0.000000
-area_occupied_within_radius(
-    W_28_RIO_LAT, W_28_RIO_LON, west_campus, radius_m=550
-)  # ACTUAL POINT: 635691.687469
+    # park_area_within_550m
+    park_area_within_550m = area_occupied_within_radius(
+        lat, lon, parks, radius_m=550
+    )  # ACTUAL POINT: 743414.143292
 
-# distance_to_ut_m
-find_nearest_geometry_distance(
-    BARTON_LAT, BARTON_LON, ut_shape
-)  # ACTUAL POINT: 3427.165043
-find_nearest_geometry_distance(
-    W_28_RIO_LAT, W_28_RIO_LON, ut_shape
-)  # ACTUAL PIONT: 322.445896
+    # median_age, median_income, median_population, count_undergrad, count_grad, area_m2, population_density
+    demo = get_polygon_attributes_with_nearest_fill(
+        lat, lon, demographics
+    )  # ACTUAL POINT: 34.4, 62031.0, 869.0, 25.0, 25.0
 
-# distance_to_west_campus_m
-find_nearest_geometry_distance(
-    BARTON_LAT, BARTON_LON, west_campus
-)  # ACTUAL POINT: 2820.582363
-find_nearest_geometry_distance(
-    W_28_RIO_LAT, W_28_RIO_LON, west_campus
-)  # ACTUAL POINT: 0
+    # median_age
+    median_age = demo["median_age"]
 
-# jobs_count_within_275m
-count_points_within_radius(
-    BARTON_LAT, BARTON_LON, jobs, radius_m=275
-)  # ACTUAL POINT: 1
-count_points_within_radius(
-    W_28_RIO_LAT, W_28_RIO_LON, jobs, radius_m=275
-)  # ACTUAL POINT: 9
+    # median_income
+    median_income = demo["median_income"]
 
-# jobs_count_within_550m
-count_points_within_radius(
-    BARTON_LAT, BARTON_LON, jobs, radius_m=550
-)  # ACTUAL POINT: 6
-count_points_within_radius(
-    W_28_RIO_LAT, W_28_RIO_LON, jobs, radius_m=550
-)  # ACTUAL POINT: 43
+    # count_population
+    count_population = demo["count_population"]
 
-# nearest_retail_m
-find_nearest_point(BARTON_LAT, BARTON_LON, retail)  # ACTUAL POINT 104.737875
-find_nearest_point(W_28_RIO_LAT, W_28_RIO_LON, retail)  # ACTUAL POINT 193.407332
+    # population_density
+    population_density = demo["count_population"] / demo["area_m2"]
 
-# count_retail_275m
-count_points_within_radius(
-    BARTON_LAT, BARTON_LON, retail, radius_m=275
-)  # ACTUAL POINT: 3
-count_points_within_radius(
-    W_28_RIO_LAT, W_28_RIO_LON, retail, radius_m=275
-)  # ACTUAL POINT: 15
+    # undergrad_percentage
+    undergrad_percentage = (
+        demo["count_undergrad"] / demo["count_population"]
+    )  # ACTUAL POINT : 0.028769
 
-# count_retail_550m
-count_points_within_radius(
-    BARTON_LAT, BARTON_LON, retail, radius_m=550
-)  # ACTUAL POINT: 8
-count_points_within_radius(
-    W_28_RIO_LAT, W_28_RIO_LON, retail, radius_m=550
-)  # ACTUAL POINT: 46
+    # grad_percentage
+    grad_percentage = (
+        demo["count_grad"] / demo["count_population"]
+    )  # ACTUAL POINT : 0.028769
 
-# avg_dist_3_retail_m
-average_distance_to_3_nearest(
-    BARTON_LAT, BARTON_LON, retail
-)  # ACTUAL POINT: 148.193271
-average_distance_to_3_nearest(
-    W_28_RIO_LAT, W_28_RIO_LON, retail
-)  # ACTUAL POINT: 206.850626
+    # west_campus_area_within_275m
+    west_campus_area_within_275m = area_occupied_within_radius(
+        lat, lon, west_campus, radius_m=275
+    )  # ACTUAL POINT: 0.000000
 
-# nearest_bikeshare_station_m
-find_nearest_point(BARTON_LAT, BARTON_LON, stations)  # ACTUAL POINT: 330.746518
+    # west_campus_area_within_550m
+    west_campus_area_within_550m = area_occupied_within_radius(
+        lat, lon, west_campus, radius_m=550
+    )  # ACTUAL POINT: 0.000000
 
-# avg_dist_3_statoins
-average_distance_to_3_nearest(
-    BARTON_LAT, BARTON_LON, stations
-)  # ACTUAL POINT: 565.399790
+    # distance_to_ut_m
+    distance_to_ut_m = find_nearest_geometry_distance(
+        lat, lon, ut_shape
+    )  # ACTUAL POINT: 3427.165043
 
-# bikeshare_station_count_within_275m
-count_points_within_radius(
-    BARTON_LAT, BARTON_LON, stations, radius_m=275
-)  # ACTUAL POINT: 0
+    # ut_area_within_275m
+    ut_area_within_275m = area_occupied_within_radius(lat, lon, ut_shape, radius_m=275)
 
-# bikeshare_station_count_within_550m
-count_points_within_radius(
-    BARTON_LAT, BARTON_LON, stations, radius_m=550
-)  # ACTUAL POINT: 2
+    # ut_area_within_550m
+    ut_area_within_550m = area_occupied_within_radius(lat, lon, ut_shape, radius_m=550)
 
-# nearest_transit_stop_distance_m
-find_nearest_point(BARTON_LAT, BARTON_LON, tranit)  # 335.767553
+    # distance_to_west_campus_m
+    distance_to_west_campus_m = find_nearest_geometry_distance(
+        lat, lon, west_campus
+    )  # ACTUAL POINT: 2820.582363
 
-# count_transit_stop_275m
-count_points_within_radius(
-    BARTON_LAT, BARTON_LON, tranit, radius_m=275
-)  # ACTUAL POINT: 0
+    # jobs_count_within_275m
+    jobs_count_within_275m = count_points_within_radius(
+        lat, lon, jobs, radius_m=275
+    )  # ACTUAL POINT: 1
 
-# count_transit_stop_550m
-count_points_within_radius(
-    BARTON_LAT, BARTON_LON, tranit, radius_m=550
-)  # ACTUAL POINT: 4
+    # jobs_count_within_550m
+    jobs_count_within_550m = count_points_within_radius(
+        lat, lon, jobs, radius_m=550
+    )  # ACTUAL POINT: 6
+
+    # nearest_retail_m
+    nearest_retail_m = find_nearest_point(lat, lon, retail)  # ACTUAL POINT 104.737875
+
+    # count_retail_275m
+    count_retail_275m = count_points_within_radius(
+        lat, lon, retail, radius_m=275
+    )  # ACTUAL POINT: 3
+
+    # count_retail_550m
+    count_retail_550m = count_points_within_radius(
+        lat, lon, retail, radius_m=550
+    )  # ACTUAL POINT: 8
+
+    # avg_dist_3_retail_m
+    avg_dist_3_retail_m = average_distance_to_3_nearest(
+        lat, lon, retail
+    )  # ACTUAL POINT: 148.193271
+
+    # nearest_bikeshare_station_m
+    nearest_bikeshare_station_m = find_nearest_point(
+        lat, lon, stations
+    )  # ACTUAL POINT: 330.746518
+
+    # avg_dist_3_stations
+    avg_dist_3_stations = average_distance_to_3_nearest(
+        lat, lon, stations
+    )  # ACTUAL POINT: 565.399790
+
+    # bikeshare_station_count_within_275m
+    bikeshare_station_count_within_275m = count_points_within_radius(
+        lat, lon, stations, radius_m=275
+    )  # ACTUAL POINT: 0
+
+    # bikeshare_station_count_within_550m
+    bikeshare_station_count_within_550m = count_points_within_radius(
+        lat, lon, stations, radius_m=550
+    )  # ACTUAL POINT: 2
+
+    # nearest_transit_stop_distance_m
+    nearest_transit_stop_distance_m = find_nearest_point(lat, lon, tranit)  # 335.767553
+
+    # count_transit_stop_275m
+    count_transit_stop_275m = count_points_within_radius(
+        lat, lon, transit, radius_m=275
+    )  # ACTUAL POINT: 0
+
+    # count_transit_stop_550m
+    count_transit_stop_550m = count_points_within_radius(
+        lat, lon, transit, radius_m=550
+    )  # ACTUAL POINT: 4
+
+    return {
+        "docks": docks,
+        "nearest_dining_hall_m": nearest_dining_hall_m,
+        "nearest_amenity_m": nearest_amenity_m,
+        "nearest_park_m": nearest_park_m,
+        "count_amenities_275m": count_amenities_275m,
+        "avg_dist_3_amenities_m": avg_dist_3_amenities_m,
+        "park_area_within_275m": park_area_within_275m,
+        "park_area_within_550m": park_area_within_550m,
+        "median_age": median_age,
+        "median_income": median_income,
+        "count_population": count_population,
+        "population_density": population_density,
+        "undergrad_percentage": undergrad_percentage,
+        "grad_percentage": grad_percentage,
+        "west_campus_area_within_275m": west_campus_area_within_275m,
+        "west_campus_area_within_550m": west_campus_area_within_550m,
+        "distance_to_west_campus_m": distance_to_west_campus_m,
+        "distance_to_ut_m": distance_to_ut_m,
+        "ut_area_within_275m": ut_area_within_275m,
+        "ut_area_within_550m": ut_area_within_550m,
+        "jobs_count_within_275m": jobs_count_within_275m,
+        "jobs_count_within_550m": jobs_count_within_550m,
+        "nearest_retail_m": nearest_retail_m,
+        "count_retail_275m": count_retail_275m,
+        "count_retail_550m": count_retail_550m,
+        "avg_dist_3_retail_m": avg_dist_3_retail_m,
+        "nearest_bikeshare_station_m": nearest_bikeshare_station_m,
+        "avg_dist_3_stations": avg_dist_3_stations,
+        "bikeshare_station_count_within_275m": bikeshare_station_count_within_275m,
+        "bikeshare_station_count_within_550m": bikeshare_station_count_within_550m,
+        "nearest_transit_stop_distance_m": nearest_transit_stop_distance_m,
+        "count_transit_stop_275m": count_transit_stop_275m,
+        "count_transit_stop_550m": count_transit_stop_550m,
+    }
+
+
+features = collect_feaures(lat, lon, docks)
+
+X_new = pd.DataFrame([features])
+pred_log = model.predict(X_new)[0]
+pred_trips_per_dock = np.expm1(pred_log)
+total_trips = pred_trips_per_dock * docks
+
+# %%
+import matplotlib.pyplot as plt
+
+plt.figure(figsize=(12, 6))
+plt.bar(stations["name"], stations["trips_per_dock"])
+
+plt.xlabel("name")
+plt.ylabel("trips_per_dock")
+plt.title("Trips per Dock by Station")
+plt.xticks(rotation=45, ha="right")
+plt.tight_layout()
+plt.show()
