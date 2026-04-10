@@ -41,4 +41,9 @@ stations["undergrad_percentage"] = (
 )
 stations["grad_percentage"] = stations["count_grad"] / stations["count_population"]
 
+stations.loc[stations["name"] == "south_congress_academy", "median_income"] = 80799
+stations.loc[stations["name"] == "south_congress_elizabeth", "median_income"] = 61538
+stations.loc[stations["name"] == "south_congress_james", "median_income"] = 80799
+
+
 stations.to_csv("../clean/stations.csv", index=False)

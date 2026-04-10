@@ -1,10 +1,23 @@
+import json
+import warnings
+
 import geopandas as gpd
+import joblib
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from shapely import wkt
 from shapely.geometry import Point
 from shapely.ops import unary_union
 
+try:
+    import shap
+
+    SHAP_AVAILABLE = True
+except ImportError:
+    SHAP_AVAILABLE = False
+
+# %%
 stations = pd.read_csv("../data/a_stations/stations.csv")
 amenities = pd.read_csv("../data/b_amenities/clean/amenities.csv")
 dining_halls = pd.read_csv("../data/b_amenities/clean/dining_halls.csv")
@@ -17,11 +30,26 @@ retail = pd.read_csv("../data/f_retail/clean/retail.csv")
 transit = pd.read_csv("../data/g_transit/clean/transit.csv")
 
 # %%
-future_station_name = "greenlee_hillview"
-lat = 30.30082466713314
-lon = -97.76855049272115
+future_station_name = "nowhere"
+lat = -2.763561934079148
+lon = 22.19908259780598
+
+# load trained model
+model = joblib.load("../models/v8/v8_no_demo.pkl")
+
+# load exact column order used during training
+with open("../models/v8/v8_no_demo_order.json", "r") as f:
+    feature_cols = json.load(f)
 
 docks = 9
+
+# barton_springs_pool lat/lon
+BARTON_LAT = 30.264500
+BARTON_LON = -97.771359
+
+# w_28th_rio lat/lon
+W_28_RIO_LAT = 30.293155
+W_28_RIO_LON = -97.744154
 
 # %%
 # convert pd to geopandas df
@@ -37,16 +65,130 @@ west_campus = gpd.GeoDataFrame(west_campus, geometry="geometry", crs="EPSG:4326"
 ut_shape["geometry"] = ut_shape["geometry"].apply(wkt.loads)
 ut_shape = gpd.GeoDataFrame(ut_shape, geometry="geometry", crs="EPSG:4326")
 
-# barton_springs_pool lat/lon
-BARTON_LAT = 30.264500
-BARTON_LON = -97.771359
 
-# w_28th_rio lat/lon
-W_28_RIO_LAT = 30.293155
-W_28_RIO_LON = -97.744154
+# %%
+# MODEL INTERPRETABILITY
+def align_features_to_training(X, feature_cols, fill_value=0):
+    """
+    Make sure prediction dataframe matches the exact training column order.
+    Missing columns are added with fill_value.
+    Extra columns are dropped.
+    """
+    X_aligned = X.copy()
+
+    for col in feature_cols:
+        if col not in X_aligned.columns:
+            X_aligned[col] = fill_value
+
+    X_aligned = X_aligned[feature_cols]
+    return X_aligned
+
+
+def get_model_feature_importance(model, feature_cols):
+    """
+    Return a dataframe of global feature importances if the model supports it.
+    Works for tree-based models like RandomForest, GradientBoosting, XGBoost sklearn API, etc.
+    """
+    if not hasattr(model, "feature_importances_"):
+        return None
+
+    importance_df = pd.DataFrame(
+        {
+            "feature": feature_cols,
+            "importance": model.feature_importances_,
+        }
+    ).sort_values("importance", ascending=False)
+
+    return importance_df.reset_index(drop=True)
+
+
+def plot_global_feature_importance(model, feature_cols, top_n=15):
+    """
+    Plot top_n global feature importances.
+    """
+    importance_df = get_model_feature_importance(model, feature_cols)
+
+    if importance_df is None:
+        print(
+            "Model does not expose feature_importances_. Skipping global importance plot."
+        )
+        return
+
+    plot_df = importance_df.head(top_n).sort_values("importance", ascending=True)
+
+    plt.figure(figsize=(10, 6))
+    plt.barh(plot_df["feature"], plot_df["importance"])
+    plt.xlabel("Importance")
+    plt.ylabel("Feature")
+    plt.title(f"Top {top_n} Global Feature Importances")
+    plt.tight_layout()
+    plt.show()
+
+
+def explain_single_prediction_shap(model, X_new, top_n=10):
+    """
+    Explain one prediction using SHAP, if shap is installed and compatible.
+
+    Returns
+    -------
+    pd.DataFrame or None
+        DataFrame of feature contributions for the single row.
+    """
+    if not SHAP_AVAILABLE:
+        print("SHAP is not installed. Run: pip install shap")
+        return None
+
+    try:
+        explainer = shap.Explainer(model)
+        shap_values = explainer(X_new)
+
+        contrib_df = pd.DataFrame(
+            {
+                "feature": X_new.columns,
+                "value": X_new.iloc[0].values,
+                "shap_value": shap_values.values[0],
+            }
+        )
+
+        contrib_df["abs_shap_value"] = contrib_df["shap_value"].abs()
+        contrib_df = contrib_df.sort_values("abs_shap_value", ascending=False)
+
+        print("\nTop feature contributions for this prediction:")
+        print(contrib_df.head(top_n)[["feature", "value", "shap_value"]])
+
+        # waterfall plot
+        try:
+            shap.plots.waterfall(shap_values[0], max_display=top_n)
+        except Exception:
+            warnings.warn("Could not render SHAP waterfall plot in this environment.")
+
+        return contrib_df
+
+    except Exception as e:
+        print(f"SHAP explanation failed: {e}")
+        return None
+
+
+def summarize_local_effects(contrib_df, top_n=5):
+    """
+    Print the top positive and negative contributors from SHAP output.
+    """
+    if contrib_df is None or contrib_df.empty:
+        return
+
+    positive = contrib_df.sort_values("shap_value", ascending=False).head(top_n)
+    negative = contrib_df.sort_values("shap_value", ascending=True).head(top_n)
+
+    print("\nTop positive contributors (pushed prediction UP):")
+    print(positive[["feature", "value", "shap_value"]])
+
+    print("\nTop negative contributors (pushed prediction DOWN):")
+    print(negative[["feature", "value", "shap_value"]])
 
 
 # %%
+
+
 def find_nearest_point(lat, lon, df, lat_col="lat", lon_col="lon", return_row=False):
     """
     Given a lat/lon, find the distance in meters to the nearest row in df.
@@ -522,20 +664,8 @@ def get_polygon_attributes_with_nearest_fill(
 area_occupied_within_radius(30.289310, -97.733037, ut_shape, radius_m=275)
 area_occupied_within_radius(30.289310, -97.733037, ut_shape, radius_m=550)
 
+
 # %%
-import json
-
-import joblib
-import pandas as pd
-
-# load trained model
-model = joblib.load("../models/v8/xgb_trips_per_dock.pkl")
-
-# load exact column order used during training
-with open("../models/v8/xgb_feature_columns.json", "r") as f:
-    feature_cols = json.load(f)
-
-
 def collect_feaures(lat, lon, docks):
     nearest_dining_hall_m = find_nearest_point(
         lat, lon, dining_halls
@@ -696,12 +826,12 @@ def collect_feaures(lat, lon, docks):
         "avg_dist_3_amenities_m": avg_dist_3_amenities_m,
         "park_area_within_275m": park_area_within_275m,
         "park_area_within_550m": park_area_within_550m,
-        "median_age": median_age,
-        "median_income": median_income,
-        "count_population": count_population,
-        "population_density": population_density,
-        "undergrad_percentage": undergrad_percentage,
-        "grad_percentage": grad_percentage,
+        # "median_age": median_age,
+        # "median_income": median_income,
+        # "count_population": count_population,
+        # "population_density": population_density,
+        # "undergrad_percentage": undergrad_percentage,
+        # "grad_percentage": grad_percentage,
         "west_campus_area_within_275m": west_campus_area_within_275m,
         "west_campus_area_within_550m": west_campus_area_within_550m,
         "distance_to_west_campus_m": distance_to_west_campus_m,
@@ -727,12 +857,34 @@ def collect_feaures(lat, lon, docks):
 features = collect_feaures(lat, lon, docks)
 
 X_new = pd.DataFrame([features])
+X_new = align_features_to_training(X_new, feature_cols)
+
 pred_log = model.predict(X_new)[0]
 pred_trips_per_dock = np.expm1(pred_log)
+
 total_trips = pred_trips_per_dock * docks
 
+print(f"\nPredicted log(trips_per_dock + 1): {pred_log:.4f}")
+print(f"Predicted trips_per_dock: {pred_trips_per_dock:.4f}")
+print(f"Predicted total trips: {total_trips:.2f}")
+
+# -----------------------------
+# Global interpretability
+# -----------------------------
+plot_global_feature_importance(model, feature_cols, top_n=15)
+
+importance_df = get_model_feature_importance(model, feature_cols)
+if importance_df is not None:
+    print("\nTop global features:")
+    print(importance_df.head(15))
+
+# -----------------------------
+# Local interpretability
+# -----------------------------
+contrib_df = explain_single_prediction_shap(model, X_new, top_n=10)
+summarize_local_effects(contrib_df, top_n=5)
+
 # %%
-import matplotlib.pyplot as plt
 import pandas as pd
 
 

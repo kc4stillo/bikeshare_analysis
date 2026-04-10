@@ -850,7 +850,7 @@ def attach_polygon_stats(
     poly_subset = poly[list(polygon_cols) + ["geometry"]].copy()
 
     # -----------------------------
-    # Step 1: spatial join to get containing/intersecting polygon
+    # Spatial join only (NO fallback)
     # -----------------------------
     inside_join = gpd.sjoin(
         station_gdf[["_station_id", "geometry"]],
@@ -859,8 +859,9 @@ def attach_polygon_stats(
         predicate=join_predicate,
     ).drop(columns=["index_right"], errors="ignore")
 
-    # If multiple matches, keep the polygon with the most non-null attributes
+    # If multiple matches, keep the polygon with most non-null attributes
     inside_join["_nonnull_count"] = inside_join[list(polygon_cols)].notna().sum(axis=1)
+
     inside_join = (
         inside_join.sort_values(
             ["_station_id", "_nonnull_count"], ascending=[True, False]
@@ -874,64 +875,6 @@ def attach_polygon_stats(
         on="_station_id",
         how="left",
     )
-
-    # -----------------------------
-    # Step 2: project for nearest fallback
-    # -----------------------------
-    if projected_crs is None:
-        try:
-            projected_crs = station_gdf.estimate_utm_crs()
-        except Exception:
-            projected_crs = "EPSG:32614"
-
-    station_proj = station_gdf[["_station_id", "geometry"]].copy().to_crs(projected_crs)
-    poly_proj = poly_subset.to_crs(projected_crs)
-
-    # -----------------------------
-    # Step 3: fill missing values column-by-column
-    # -----------------------------
-    for col in polygon_cols:
-        missing_ids = result.loc[result[col].isna(), "_station_id"]
-
-        if missing_ids.empty:
-            continue
-
-        # only polygons with a real value for this column
-        valid_poly = poly_proj.loc[poly_proj[col].notna(), [col, "geometry"]].copy()
-
-        # if no polygon anywhere has a usable value, fail loudly
-        if valid_poly.empty:
-            raise ValueError(
-                f"Column '{col}' has no non-null values in polygon_gdf, "
-                "so nearest-shape fallback cannot fill missing values."
-            )
-
-        missing_points = station_proj[
-            station_proj["_station_id"].isin(missing_ids)
-        ].copy()
-
-        nearest_join = gpd.sjoin_nearest(
-            missing_points, valid_poly, how="left", distance_col="_nearest_dist"
-        ).drop(columns=["index_right"], errors="ignore")
-
-        # if ties happen, keep the first nearest result per station
-        nearest_join = nearest_join.sort_values(
-            ["_station_id", "_nearest_dist"]
-        ).drop_duplicates(subset="_station_id", keep="first")
-
-        fill_map = nearest_join.set_index("_station_id")[col]
-
-        result.loc[result[col].isna(), col] = result.loc[
-            result[col].isna(), "_station_id"
-        ].map(fill_map)
-
-        # strict guarantee: no NaNs allowed after fallback
-        if result[col].isna().any():
-            unresolved = result.loc[result[col].isna(), "_station_id"].tolist()
-            raise ValueError(
-                f"Column '{col}' still has missing values after nearest fallback. "
-                f"Unresolved station ids: {unresolved}"
-            )
 
     # -----------------------------
     # Final cleanup

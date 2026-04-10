@@ -36,6 +36,23 @@ ml_df = df.drop(
         "count_undergrad",
         "count_grad",
         "bikeable_infrastructure",
+        "median_age",
+        "median_income",
+        "count_population",
+        "count_undergrad",
+        "count_grad",
+        "population_density",
+        "undergrad_percentage",
+        "grad_percentage",
+        "west_campus_area_within_275m",
+        "west_campus_area_within_550m",
+        "distance_to_west_campus_m",
+        "distance_to_ut_m",
+        "ut_area_within_550m",
+        "nearest_dining_hall_m",
+        "west_campus_area_within_275m",
+        "west_campus_area_within_550m",
+        "nearest_dining_hall_m",
     ]
 )
 
@@ -201,12 +218,12 @@ print(feature_importance.to_string(index=False))
 
 # %%
 # save trained model
-joblib.dump(model, "v8.pkl")
+joblib.dump(model, "v8_no_demo_no_ut.pkl")
 
 # save exact training column order
-with open("v8.json", "w") as f:
+with open("v8_no_demo_order_no_ut.json", "w") as f:
     json.dump(X.columns.tolist(), f)
 
 # save feature weights too (optional but useful)
-with open("v8.json", "w") as f:
+with open("v8_no_demo_weights_no_ut.json", "w") as f:
     json.dump(dict(zip(X.columns.tolist(), feature_weights.tolist())), f)
