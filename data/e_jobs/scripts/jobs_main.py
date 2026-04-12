@@ -6,7 +6,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path.cwd().parents[2]))
 
-from utilities import count_within_radius
+from utilities.df import count_within_radius
 
 pd.set_option("display.max_rows", None)
 pd.set_option("display.max_columns", None)

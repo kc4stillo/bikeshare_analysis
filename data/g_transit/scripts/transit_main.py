@@ -5,7 +5,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path.cwd().parents[2]))
 
-from utilities import (
+from utilities.df import (
     avg_distance_k_nearest_stations,
     count_stations_within_radius,
     count_within_radius,

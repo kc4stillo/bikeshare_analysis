@@ -8,7 +8,7 @@ from shapely import wkt
 
 sys.path.insert(0, str(Path.cwd().parents[2]))
 
-from utilities import attach_polygon_stats
+from utilities.df import attach_polygon_stats
 
 pd.set_option("display.max_rows", None)
 pd.set_option("display.max_columns", None)

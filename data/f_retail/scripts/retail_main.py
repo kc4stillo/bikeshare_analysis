@@ -5,7 +5,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path.cwd().parents[2]))
 
-from utilities import avg_nearest_3_distance, count_within_radius, nearest_distance
+from utilities.df import avg_nearest_3_distance, count_within_radius, nearest_distance
 
 pd.set_option("display.max_rows", None)
 pd.set_option("display.max_columns", None)
