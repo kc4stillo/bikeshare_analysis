@@ -36,6 +36,7 @@ ml_df = df.drop(
         "count_undergrad",
         "count_grad",
         "bikeable_infrastructure",
+        "count_population",
     ]
 )
 
@@ -206,7 +207,3 @@ joblib.dump(model, "v8.pkl")
 # save exact training column order
 with open("v8.json", "w") as f:
     json.dump(X.columns.tolist(), f)
-
-# save feature weights too (optional but useful)
-with open("v8.json", "w") as f:
-    json.dump(dict(zip(X.columns.tolist(), feature_weights.tolist())), f)

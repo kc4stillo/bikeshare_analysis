@@ -74,6 +74,9 @@ ml_df = df.drop(
         "west_campus_area_within_275m",
         "west_campus_area_within_550m",
         "nearest_dining_hall_m",
+        "nearest_retail_m",
+        "count_amenities_275m",
+        "nearest_bikeshare_station_m",
     ]
 )
 
