@@ -20,21 +20,21 @@ pd.set_option("display.max_colwidth", None)
 df = pd.read_csv("../../data/g_transit/clean/stations.csv")
 
 ut = [
-    "dean_keeton_park_place",
-    "deen_keeton_whitis",
-    "dean_keeton_robert_dedman_dr",
-    "dean_keeton_whitisdean_keeton_speedway",
-    "dean_keeton_whitis",
-    "e_21st_speedway_at_pcl",
-    "e_23rd_san_jacinto_at_dkr_stadium",
-    "guadalupe_west_mall_at_university_co-op",
-    "w_21st_guadalupe",
-    "w_21st_university",
-    "w_225_rio_grande",
-    "w_22nd_pearl",
-    "w_23rd_san_gabriel",
-    "w_26th_nueces",
-    "w_28th_rio_grande",
+    # "dean_keeton_park_place",
+    # "deen_keeton_whitis",
+    # "dean_keeton_robert_dedman_dr",
+    # "dean_keeton_whitisdean_keeton_speedway",
+    # "dean_keeton_whitis",
+    # "e_21st_speedway_at_pcl",
+    # "e_23rd_san_jacinto_at_dkr_stadium",
+    # "guadalupe_west_mall_at_university_co-op",
+    # "w_21st_guadalupe",
+    # "w_21st_university",
+    # "w_225_rio_grande",
+    # "w_22nd_pearl",
+    # "w_23rd_san_gabriel",
+    # "w_26th_nueces",
+    # "w_28th_rio_grande",
 ]
 
 # keep station names for the residual table
@@ -64,19 +64,19 @@ ml_df = df.drop(
         "population_density",
         "undergrad_percentage",
         "grad_percentage",
-        "west_campus_area_within_275m",
-        "west_campus_area_within_550m",
-        "distance_to_west_campus_m",
-        "distance_to_ut_m",
-        "ut_area_within_275m",
-        "ut_area_within_550m",
-        "nearest_dining_hall_m",
-        "west_campus_area_within_275m",
-        "west_campus_area_within_550m",
-        "nearest_dining_hall_m",
-        "nearest_retail_m",
-        "count_amenities_275m",
-        "nearest_bikeshare_station_m",
+        # "west_campus_area_within_275m",
+        # "west_campus_area_within_550m",
+        # "distance_to_west_campus_m",
+        # "distance_to_ut_m",
+        # "ut_area_within_275m",
+        # "ut_area_within_550m",
+        # "nearest_dining_hall_m",
+        # "west_campus_area_within_275m",
+        # "west_campus_area_within_550m",
+        # "nearest_dining_hall_m",
+        # "nearest_retail_m",
+        # "count_amenities_275m",
+        # "nearest_bikeshare_station_m",
     ]
 )
 
@@ -88,34 +88,6 @@ X = ml_df.drop(columns=["trips_per_dock"])
 
 # log target for training
 y_log = np.log1p(y)
-
-# %%
-# -----------------------------
-# Feature weights
-# -----------------------------
-feature_weights = np.ones(X.shape[1], dtype=float)
-
-# # # reduce how often XGBoost samples median_age
-# feature_weights[X.columns.get_loc("median_age")] = 0.25
-# feature_weights[X.columns.get_loc("median_income")] = 0.25
-# feature_weights[X.columns.get_loc("undergrad_percentage")] = 0.25
-# feature_weights[X.columns.get_loc("grad_percentage")] = 0.25
-# feature_weights[X.columns.get_loc("count_population")] = 0.25
-# feature_weights[X.columns.get_loc("population_density")] = 0.25
-
-
-# feature_weights[X.columns.get_loc("nearest_bikeshare_station_m")] = 50
-# feature_weights[X.columns.get_loc("avg_dist_3_stations")] = 20
-
-
-# optional: print to verify
-feature_weight_table = pd.DataFrame(
-    {"feature": X.columns, "feature_weight": feature_weights}
-).sort_values("feature_weight")
-
-print("\nFeature Weights")
-print("-" * 40)
-print(feature_weight_table.to_string(index=False))
 
 # %%
 # -----------------------------
@@ -146,7 +118,7 @@ model = XGBRegressor(
     random_state=42,
 )
 
-model.fit(X_train, y_train_log, feature_weights=feature_weights)
+model.fit(X_train, y_train_log)
 
 # %%
 # -----------------------------
@@ -182,7 +154,7 @@ for train_idx, val_idx in cv.split(X):
     y_cv_train, y_cv_val = y_log.iloc[train_idx], y_log.iloc[val_idx]
 
     cv_model = clone(model)
-    cv_model.fit(X_cv_train, y_cv_train, feature_weights=feature_weights)
+    cv_model.fit(X_cv_train, y_cv_train)
 
     cv_score = cv_model.score(X_cv_val, y_cv_val)  # R² on log scale
     cv_scores.append(cv_score)
@@ -232,12 +204,8 @@ print(residual_table.to_string(index=False))
 
 # %%
 # save trained model
-joblib.dump(model, "v8_no_demo_no_ut.pkl")
+joblib.dump(model, "v8_general.pkl")
 
 # save exact training column order
-with open("v8_no_demo_order_no_ut.json", "w") as f:
+with open("v8_general.json", "w") as f:
     json.dump(X.columns.tolist(), f)
-
-# save feature weights too (optional but useful)
-with open("v8_no_demo_weights_no_ut.json", "w") as f:
-    json.dump(dict(zip(X.columns.tolist(), feature_weights.tolist())), f)

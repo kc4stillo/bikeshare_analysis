@@ -1,3 +1,5 @@
+# DOES NOT INCLUDE ANY UT RELATED FEATURES
+
 import json
 import sys
 import warnings
@@ -41,16 +43,16 @@ retail = pd.read_csv("../data/f_retail/clean/retail.csv")
 transit = pd.read_csv("../data/g_transit/clean/transit.csv")
 
 # %%
-future_station_name = "24th_speedway"
-lat = 30.34935199834792
-lon = -97.7794221614852
+future_station_name = "e_7th"
+lat = 30.252380917720114
+lon = -97.69596904577769
 docks = 9
 
 # load trained model
-model = joblib.load("../models/v8/v8.pkl")
+model = joblib.load("../models/v8/v8_general.pkl")
 
 # load exact column order used during training
-with open("../models/v8/v8.json", "r") as f:
+with open("../models/v8/v8_general.json", "r") as f:
     feature_cols = json.load(f)
 
 # %%
@@ -258,8 +260,8 @@ def collect_feaures(lat, lon, docks):
 
     return {
         "docks": docks,
-        "nearest_dining_hall_m": nearest_dining_hall_m,
         "nearest_amenity_m": nearest_amenity_m,
+        "nearest_dining_hall_m": nearest_dining_hall_m,
         "nearest_park_m": nearest_park_m,
         "count_amenities_275m": count_amenities_275m,
         "avg_dist_3_amenities_m": avg_dist_3_amenities_m,
@@ -267,24 +269,24 @@ def collect_feaures(lat, lon, docks):
         "park_area_within_550m": park_area_within_550m,
         "median_age": median_age,
         "median_income": median_income,
-        # "count_population": count_population,
+        "count_population": count_population,
         "population_density": population_density,
         "undergrad_percentage": undergrad_percentage,
         "grad_percentage": grad_percentage,
-        "west_campus_area_within_275m": west_campus_area_within_275m,
-        "west_campus_area_within_550m": west_campus_area_within_550m,
-        "distance_to_west_campus_m": distance_to_west_campus_m,
-        "distance_to_ut_m": distance_to_ut_m,
-        "ut_area_within_275m": ut_area_within_275m,
-        "ut_area_within_550m": ut_area_within_550m,
+        # "west_campus_area_within_275m": west_campus_area_within_275m,
+        # "west_campus_area_within_550m": west_campus_area_within_550m,
+        # "distance_to_west_campus_m": distance_to_west_campus_m,
+        # "distance_to_ut_m": distance_to_ut_m,
+        # "ut_area_within_275m": ut_area_within_275m,
+        # "ut_area_within_550m": ut_area_within_550m,
         "jobs_count_within_275m": jobs_count_within_275m,
         "jobs_count_within_550m": jobs_count_within_550m,
         "nearest_retail_m": nearest_retail_m,
         "count_retail_275m": count_retail_275m,
         "count_retail_550m": count_retail_550m,
         "avg_dist_3_retail_m": avg_dist_3_retail_m,
-        "nearest_bikeshare_station_m": nearest_bikeshare_station_m,
         "avg_dist_3_stations": avg_dist_3_stations,
+        "nearest_bikeshare_station_m": nearest_bikeshare_station_m,
         "bikeshare_station_count_within_275m": bikeshare_station_count_within_275m,
         "bikeshare_station_count_within_550m": bikeshare_station_count_within_550m,
         "nearest_transit_stop_distance_m": nearest_transit_stop_distance_m,
@@ -310,7 +312,7 @@ print(f"Predicted total trips: {total_trips:.2f}")
 # -----------------------------
 # Global interpretability
 # -----------------------------
-plot_global_feature_importance(model, feature_cols, top_n=34)
+plot_global_feature_importance(model, feature_cols, top_n=15)
 
 importance_df = get_model_feature_importance(model, feature_cols)
 if importance_df is not None:
@@ -320,7 +322,7 @@ if importance_df is not None:
 # -----------------------------
 # Local interpretability
 # -----------------------------
-contrib_df = explain_single_prediction_shap(model, X_new, top_n=28)
+contrib_df = explain_single_prediction_shap(model, X_new, top_n=21)
 # summarize_local_effects(contrib_df, top_n=5)
 
 # %%

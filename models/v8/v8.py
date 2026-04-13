@@ -37,7 +37,6 @@ ml_df = df.drop(
         "count_grad",
         "bikeable_infrastructure",
         "count_population",
-        "grad_percentage",
     ]
 )
 
@@ -58,16 +57,15 @@ y_log = np.log1p(y)
 #  0 = no constraint
 # -----------------------------
 constraint_map = {
-    "nearest_transit_stop_distance_m": -1,
-    "nearest_bikeshare_station_m": -1,
+    # "nearest_transit_stop_distance_m": -1,
+    # "nearest_bikeshare_station_m": -1,
     # optional examples if you want to expand later:
-    "nearest_retail_m": -1,
-    "nearest_park_m": -1,
-    "nearest_amenity_m": -1,
-    "count_transit_stop_275m": 1,
-    "avg_dist_3_stations": -1,
-    "count_transit_stop_550m": 1,
-    "bikeshare_station_count_within_550m": 1,
+    # "nearest_retail_m": -1,
+    # "nearest_park_m": -1,
+    # "nearest_amenity_m": -1,
+    # "count_transit_stop_275m": 1,
+    # "count_transit_stop_550m": 1,
+    # "bikeshare_station_count_within_550m": 1,
 }
 
 monotone_constraints = tuple(constraint_map.get(col, 0) for col in X.columns)
@@ -210,12 +208,12 @@ with open("v8.json", "w") as f:
     json.dump(X.columns.tolist(), f)
 
 # save constraint info too
-with open("v8_monotone_constraints.json", "w") as f:
-    json.dump(
-        {
-            "feature_order": X.columns.tolist(),
-            "monotone_constraints": list(monotone_constraints),
-        },
-        f,
-        indent=2,
-    )
+# with open("v8_monotone_constraints.json", "w") as f:
+#     json.dump(
+#         {
+#             "feature_order": X.columns.tolist(),
+#             "monotone_constraints": list(monotone_constraints),
+#         },
+#         f,
+#         indent=2,
+#     )

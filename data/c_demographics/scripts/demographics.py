@@ -343,6 +343,51 @@ df.loc[df["geoid"] == "484530006051", "median_income"] = 7000
 df.loc[df["geoid"] == "484530006071", "median_income"] = 9000
 df.loc[df["geoid"] == "484530011011", "median_income"] = 114115
 
+df.loc[df["geoid"] == "484530352003", "median_income"] = 90000
+df.loc[df["geoid"] == "484530340002", "median_income"] = 120000
+df.loc[df["geoid"] == "484530318004", "median_income"] = 62000
+df.loc[df["geoid"] == "484530024302", "median_income"] = 70753
+df.loc[df["geoid"] == "484530024301", "median_income"] = 70000
+
+df.loc[df["geoid"] == "484530024412", "median_income"] = 65000
+df.loc[df["geoid"] == "484539800001", "median_income"] = 85000
+df.loc[df["geoid"] == "484530024481", "median_income"] = 100000
+df.loc[df["geoid"] == "484530023191", "median_income"] = 75000
+df.loc[df["geoid"] == "484530024521", "median_income"] = 50000
+
+df.loc[df["geoid"] == "484530023254", "median_income"] = 80000
+df.loc[df["geoid"] == "484530023242", "median_income"] = 75000
+df.loc[df["geoid"] == "484530023241", "median_income"] = 35000
+df.loc[df["geoid"] == "484530023241", "median_income"] = 65000
+df.loc[df["geoid"] == "484530023273", "median_income"] = 70000
+df.loc[df["geoid"] == "484530013122", "median_income"] = 90000
+df.loc[df["geoid"] == "484530340002", "median_income"] = 175000
+df.loc[df["geoid"] == "484530350002", "median_income"] = 200000
+df.loc[df["geoid"] == "484530300001", "median_income"] = 175000
+df.loc[df["geoid"] == "484530400002", "median_income"] = 55000
+df.loc[df["geoid"] == "484530401001", "median_income"] = 50000
+df.loc[df["geoid"] == "484530406001", "median_income"] = 70000
+df.loc[df["geoid"] == "484530410001", "median_income"] = 70000
+df.loc[df["geoid"] == "484530338001", "median_income"] = 160000
+df.loc[df["geoid"] == "484530457001", "median_income"] = 80000
+df.loc[df["geoid"] == "484530428002", "median_income"] = 75000
+df.loc[df["geoid"] == "484530424003", "median_income"] = 100000
+df.loc[df["geoid"] == "484530024483", "median_income"] = 80000
+df.loc[df["geoid"] == "484530003081", "median_income"] = 90000
+df.loc[df["geoid"] == "484530024391", "median_income"] = 80000
+df.loc[df["geoid"] == "484530003092", "median_income"] = 115000
+df.loc[df["geoid"] == "484530023243", "median_income"] = 70000
+
+df.loc[df["geoid"] == "484530024301", "median_age"] = 25
+df.loc[df["geoid"] == "484539800001", "median_age"] = 45
+df.loc[df["geoid"] == "484530023242", "median_age"] = 29
+df.loc[df["geoid"] == "484530023271", "median_age"] = 33
+df.loc[df["geoid"] == "484530023273", "median_age"] = 31
+
+
+# df.loc[df["geoid"] == "", "median_income"] =
+
+
 # df = df.dropna()
 
 # %%
@@ -406,6 +451,8 @@ df["population_density"] = df["count_population"] / df["area_m2"]
 
 df.head()
 
+df = df[df["geometry"].notna()]
+
 df.to_csv("../clean/demographics.csv", index=False)
 
 # %%
@@ -421,7 +468,7 @@ m = folium.Map(location=[30.3, -97.75], zoom_start=10)
 folium.Choropleth(
     geo_data=map_df,
     data=map_df,
-    columns=["GEOID", "income"],
+    columns=["GEOID", "median_age"],
     key_on="feature.properties.GEOID",
     fill_color="YlGnBu",
     fill_opacity=0.7,
@@ -429,10 +476,19 @@ folium.Choropleth(
     legend_name="Median Household Income",
 ).add_to(m)
 
+map_df.columns
+
 # popup layer for clicking shapes
 popup = folium.GeoJsonPopup(
-    fields=["GEOID", "population", "income", "age", "undergrad", "grad"],
-    aliases=["GEOID:", "Population:", "Income:", "Median Age:", "Undergrad:", "Grad:"],
+    fields=[
+        "geoid",
+        "count_population",
+        "median_income",
+        "median_age",
+        "count_undergrad",
+        "count_grad",
+    ],
+    aliases=["geoid:", "Population:", "Income:", "Median Age:", "Undergrad:", "Grad:"],
     localize=True,
     labels=True,
     style="background-color: white;",
