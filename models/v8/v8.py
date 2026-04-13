@@ -37,6 +37,7 @@ ml_df = df.drop(
         "count_grad",
         "bikeable_infrastructure",
         "count_population",
+        "grad_percentage",
     ]
 )
 
@@ -51,31 +52,30 @@ y_log = np.log1p(y)
 
 # %%
 # -----------------------------
-# Feature weights
+# Monotonic constraints
+# -1 = as feature increases, prediction can only stay flat or decrease
+# +1 = as feature increases, prediction can only stay flat or increase
+#  0 = no constraint
 # -----------------------------
-feature_weights = np.ones(X.shape[1], dtype=float)
+constraint_map = {
+    "nearest_transit_stop_distance_m": -1,
+    "nearest_bikeshare_station_m": -1,
+    # optional examples if you want to expand later:
+    "nearest_retail_m": -1,
+    "nearest_park_m": -1,
+    "nearest_amenity_m": -1,
+    "count_transit_stop_275m": 1,
+    "avg_dist_3_stations": -1,
+    "count_transit_stop_550m": 1,
+    "bikeshare_station_count_within_550m": 1,
+}
 
-# # # reduce how often XGBoost samples median_age
-# feature_weights[X.columns.get_loc("median_age")] = 0.25
-# feature_weights[X.columns.get_loc("median_income")] = 0.25
-# feature_weights[X.columns.get_loc("undergrad_percentage")] = 0.25
-# feature_weights[X.columns.get_loc("grad_percentage")] = 0.25
-# feature_weights[X.columns.get_loc("count_population")] = 0.25
-# feature_weights[X.columns.get_loc("population_density")] = 0.25
+monotone_constraints = tuple(constraint_map.get(col, 0) for col in X.columns)
 
-
-# feature_weights[X.columns.get_loc("nearest_bikeshare_station_m")] = 50
-# feature_weights[X.columns.get_loc("avg_dist_3_stations")] = 20
-
-
-# optional: print to verify
-feature_weight_table = pd.DataFrame(
-    {"feature": X.columns, "feature_weight": feature_weights}
-).sort_values("feature_weight")
-
-print("\nFeature Weights")
-print("-" * 40)
-print(feature_weight_table.to_string(index=False))
+print("Monotone constraints by feature:")
+for col, val in zip(X.columns, monotone_constraints):
+    if val != 0:
+        print(f"{col}: {val}")
 
 # %%
 # -----------------------------
@@ -104,9 +104,10 @@ model = XGBRegressor(
     reg_lambda=1.0,
     objective="reg:squarederror",
     random_state=42,
+    monotone_constraints=monotone_constraints,
 )
 
-model.fit(X_train, y_train_log, feature_weights=feature_weights)
+model.fit(X_train, y_train_log)
 
 # %%
 # -----------------------------
@@ -142,7 +143,7 @@ for train_idx, val_idx in cv.split(X):
     y_cv_train, y_cv_val = y_log.iloc[train_idx], y_log.iloc[val_idx]
 
     cv_model = clone(model)
-    cv_model.fit(X_cv_train, y_cv_train, feature_weights=feature_weights)
+    cv_model.fit(X_cv_train, y_cv_train)
 
     cv_score = cv_model.score(X_cv_val, y_cv_val)  # R² on log scale
     cv_scores.append(cv_score)
@@ -207,3 +208,14 @@ joblib.dump(model, "v8.pkl")
 # save exact training column order
 with open("v8.json", "w") as f:
     json.dump(X.columns.tolist(), f)
+
+# save constraint info too
+with open("v8_monotone_constraints.json", "w") as f:
+    json.dump(
+        {
+            "feature_order": X.columns.tolist(),
+            "monotone_constraints": list(monotone_constraints),
+        },
+        f,
+        indent=2,
+    )

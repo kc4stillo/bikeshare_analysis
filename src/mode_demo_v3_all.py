@@ -42,8 +42,8 @@ transit = pd.read_csv("../data/g_transit/clean/transit.csv")
 
 # %%
 future_station_name = "24th_speedway"
-lat = 30.287404261486643
-lon = -97.7370598978446
+lat = 30.34935199834792
+lon = -97.7794221614852
 docks = 9
 
 # load trained model
@@ -267,7 +267,7 @@ def collect_feaures(lat, lon, docks):
         "park_area_within_550m": park_area_within_550m,
         "median_age": median_age,
         "median_income": median_income,
-        "count_population": count_population,
+        # "count_population": count_population,
         "population_density": population_density,
         "undergrad_percentage": undergrad_percentage,
         "grad_percentage": grad_percentage,
@@ -310,7 +310,7 @@ print(f"Predicted total trips: {total_trips:.2f}")
 # -----------------------------
 # Global interpretability
 # -----------------------------
-plot_global_feature_importance(model, feature_cols, top_n=15)
+plot_global_feature_importance(model, feature_cols, top_n=34)
 
 importance_df = get_model_feature_importance(model, feature_cols)
 if importance_df is not None:
@@ -320,7 +320,7 @@ if importance_df is not None:
 # -----------------------------
 # Local interpretability
 # -----------------------------
-contrib_df = explain_single_prediction_shap(model, X_new, top_n=21)
+contrib_df = explain_single_prediction_shap(model, X_new, top_n=28)
 # summarize_local_effects(contrib_df, top_n=5)
 
 # %%

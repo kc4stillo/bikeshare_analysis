@@ -41,8 +41,8 @@ transit = pd.read_csv("../data/g_transit/clean/transit.csv")
 
 # %%
 future_station_name = "nowhere"
-lat = 51.62664130551806
-lon = -120.68104235179968
+lat = 24.286783805410494
+lon = 173.95553835945773
 docks = 9
 
 # load trained model
