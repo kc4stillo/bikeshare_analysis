@@ -18,10 +18,8 @@ from utilities.lat_lon import (
     lat_lon_count_points_within_radius,
     lat_lon_find_nearest_geometry_distance,
     lat_lon_find_nearest_point,
-    lat_lon_get_polygon_attributes_with_nearest_fill,
 )
 
-# %%
 try:
     import shap
 
@@ -43,8 +41,9 @@ transit = pd.read_csv("../data/g_transit/clean/transit.csv")
 
 # %%
 future_station_name = "nowhere"
-lat = 30.285931407779753
-lon = -97.73687645829243
+lat = 51.62664130551806
+lon = -120.68104235179968
+docks = 9
 
 # load trained model
 model = joblib.load("../models/v8/v8_no_demo_no_ut.pkl")
@@ -52,16 +51,6 @@ model = joblib.load("../models/v8/v8_no_demo_no_ut.pkl")
 # load exact column order used during training
 with open("../models/v8/v8_no_demo_order_no_ut.json", "r") as f:
     feature_cols = json.load(f)
-
-docks = 9
-
-# barton_springs_pool lat/lon
-BARTON_LAT = 30.264500
-BARTON_LON = -97.771359
-
-# w_28th_rio lat/lon
-W_28_RIO_LAT = 30.293155
-W_28_RIO_LON = -97.744154
 
 # %%
 # convert pd to geopandas df
@@ -200,7 +189,6 @@ def summarize_local_effects(contrib_df, top_n=5):
 
 # %%
 def collect_feaures(lat, lon, docks):
-    nearest_dining_hall_m = lat_lon_find_nearest_point(lat, lon, dining_halls)
     nearest_amenity_m = lat_lon_find_nearest_point(lat, lon, amenities)
     nearest_park_m = lat_lon_find_nearest_geometry_distance(lat, lon, parks)
     count_amenities_275m = lat_lon_count_points_within_radius(
@@ -212,29 +200,6 @@ def collect_feaures(lat, lon, docks):
     )
     park_area_within_550m = lat_lon_area_occupied_within_radius(
         lat, lon, parks, radius_m=550
-    )
-    demo = lat_lon_get_polygon_attributes_with_nearest_fill(lat, lon, demographics)
-    median_age = demo["median_age"]
-    median_income = demo["median_income"]
-    count_population = demo["count_population"]
-    population_density = demo["count_population"] / demo["area_m2"]
-    undergrad_percentage = demo["count_undergrad"] / demo["count_population"]
-    grad_percentage = demo["count_grad"] / demo["count_population"]
-    west_campus_area_within_275m = lat_lon_area_occupied_within_radius(
-        lat, lon, west_campus, radius_m=275
-    )
-    west_campus_area_within_550m = lat_lon_area_occupied_within_radius(
-        lat, lon, west_campus, radius_m=550
-    )
-    distance_to_ut_m = lat_lon_find_nearest_geometry_distance(lat, lon, ut_shape)
-    ut_area_within_275m = lat_lon_area_occupied_within_radius(
-        lat, lon, ut_shape, radius_m=275
-    )
-    ut_area_within_550m = lat_lon_area_occupied_within_radius(
-        lat, lon, ut_shape, radius_m=550
-    )
-    distance_to_west_campus_m = lat_lon_find_nearest_geometry_distance(
-        lat, lon, west_campus
     )
     jobs_count_within_275m = lat_lon_count_points_within_radius(
         lat, lon, jobs, radius_m=275
@@ -268,25 +233,12 @@ def collect_feaures(lat, lon, docks):
 
     return {
         "docks": docks,
-        # "nearest_dining_hall_m": nearest_dining_hall_m,
         "nearest_amenity_m": nearest_amenity_m,
         "nearest_park_m": nearest_park_m,
         "count_amenities_275m": count_amenities_275m,
         "avg_dist_3_amenities_m": avg_dist_3_amenities_m,
         "park_area_within_275m": park_area_within_275m,
         "park_area_within_550m": park_area_within_550m,
-        # "median_age": median_age,
-        # "median_income": median_income,
-        # "count_population": count_population,
-        # "population_density": population_density,
-        # "undergrad_percentage": undergrad_percentage,
-        # "grad_percentage": grad_percentage,
-        # "west_campus_area_within_275m": west_campus_area_within_275m,
-        # "west_campus_area_within_550m": west_campus_area_within_550m,
-        # "distance_to_west_campus_m": distance_to_west_campus_m,
-        # "distance_to_ut_m": distance_to_ut_m,
-        # "ut_area_within_275m": ut_area_within_275m,
-        # "ut_area_within_550m": ut_area_within_550m,
         "jobs_count_within_275m": jobs_count_within_275m,
         "jobs_count_within_550m": jobs_count_within_550m,
         "nearest_retail_m": nearest_retail_m,
@@ -330,7 +282,7 @@ if importance_df is not None:
 # -----------------------------
 # Local interpretability
 # -----------------------------
-contrib_df = explain_single_prediction_shap(model, X_new, top_n=10)
+contrib_df = explain_single_prediction_shap(model, X_new, top_n=21)
 summarize_local_effects(contrib_df, top_n=5)
 
 # %%

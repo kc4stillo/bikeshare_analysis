@@ -19,8 +19,28 @@ pd.set_option("display.max_colwidth", None)
 # -----------------------------
 df = pd.read_csv("../../data/g_transit/clean/stations.csv")
 
+ut = [
+    "dean_keeton_park_place",
+    "deen_keeton_whitis",
+    "dean_keeton_robert_dedman_dr",
+    "dean_keeton_whitisdean_keeton_speedway",
+    "dean_keeton_whitis",
+    "e_21st_speedway_at_pcl",
+    "e_23rd_san_jacinto_at_dkr_stadium",
+    "guadalupe_west_mall_at_university_co-op",
+    "w_21st_guadalupe",
+    "w_21st_university",
+    "w_225_rio_grande",
+    "w_22nd_pearl",
+    "w_23rd_san_gabriel",
+    "w_26th_nueces",
+    "w_28th_rio_grande",
+]
+
 # keep station names for the residual table
-station_names = df["name"]
+station_names = df.loc[~df["name"].isin(ut), "name"]
+df = df[~df["name"].isin(ut)]
+
 
 # model dataset
 ml_df = df.drop(
@@ -173,8 +193,9 @@ print(f"Mean CV R²: {cv_scores.mean():.3f}")
 print(f"Std CV R² : {cv_scores.std():.3f}")
 
 # %%
+# %%
 # -----------------------------
-# Residual table for evaluation set
+# Residual table for test set
 # residual = actual - predicted
 # -----------------------------
 residual_table = pd.DataFrame(
@@ -201,21 +222,10 @@ residual_table["percent_error"] = np.where(
 
 residual_table = residual_table.sort_values("abs_residual", ascending=False)
 
-print("\nResidual Table (Evaluation Set)")
-print("-" * 70)
-print(residual_table.round(3).to_string(index=False))
+print("\nResidual Table (Test Set)")
+print("-" * 90)
+print(residual_table.to_string(index=False))
 
-# %%
-# -----------------------------
-# Most important features
-# -----------------------------
-feature_importance = pd.DataFrame(
-    {"feature": X.columns, "importance": model.feature_importances_}
-).sort_values("importance", ascending=False)
-
-print("\nMost Important Features")
-print("-" * 40)
-print(feature_importance.to_string(index=False))
 
 # %%
 # save trained model
