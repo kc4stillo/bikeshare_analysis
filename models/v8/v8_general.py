@@ -51,7 +51,7 @@ ml_df = df.drop(
         "lat",
         "lon",
         "north_campus_area_within_275m",
-        "north_campus_area_within_550m",
+        # "north_campus_area_within_550m",
         "west_campus_area_within_825m",
         "north_campus_area_within_550m",
         "count_undergrad",
@@ -59,27 +59,27 @@ ml_df = df.drop(
         "bikeable_infrastructure",
         # "median_age",
         # "median_income",
-        # "count_population",
-        # "count_undergrad",
-        # "count_grad",
+        "count_population",
+        "count_undergrad",
+        "count_grad",
         # "population_density",
         # "undergrad_percentage",
         # "grad_percentage",
-        "west_campus_area_within_275m",
-        "west_campus_area_within_550m",
-        "distance_to_west_campus_m",
+        # "distance_to_west_campus_m",
         # "distance_to_ut_m",
-        # "ut_area_within_275m",
-        # "ut_area_within_550m",
+        "ut_area_within_275m",
+        "ut_area_within_550m",
         # "nearest_dining_hall_m",
-        # "west_campus_area_within_275m",
+        "west_campus_area_within_275m",
         # "west_campus_area_within_550m",
         "nearest_dining_hall_m",
         # "nearest_retail_m",
         # "count_amenities_275m",
-        "nearest_bikeshare_station_m",
+        # "nearest_bikeshare_station_m",
         # "jobs_count_within_550m",
         # "jobs_count_within_275m"
+        "count_retail_550m",
+        "count_retail_275m",
     ]
 )
 
@@ -206,6 +206,17 @@ print("\nResidual Table (Test Set)")
 print("-" * 90)
 print(residual_table.to_string(index=False))
 
+# %%
+# -----------------------------
+# Most important features
+# -----------------------------
+feature_importance = pd.DataFrame(
+    {"feature": X.columns, "importance": model.feature_importances_}
+).sort_values("importance", ascending=False)
+
+print("\nMost Important Features")
+print("-" * 40)
+print(feature_importance.to_string(index=False))
 
 # %%
 # save trained model
