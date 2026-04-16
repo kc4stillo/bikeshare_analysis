@@ -1,5 +1,4 @@
 # DOES NOT INCLUDE ANY UT RELATED FEATURES
-
 import json
 import sys
 import warnings
@@ -44,8 +43,8 @@ transit = pd.read_csv("../data/g_transit/clean/transit.csv")
 
 # %%
 future_station_name = "e_7th"
-lat = 30.252380917720114
-lon = -97.69596904577769
+lat = 30.269322357148067
+lon = -97.75089243511833
 docks = 9
 
 # load trained model
@@ -261,24 +260,24 @@ def collect_feaures(lat, lon, docks):
     return {
         "docks": docks,
         "nearest_amenity_m": nearest_amenity_m,
-        "nearest_dining_hall_m": nearest_dining_hall_m,
         "nearest_park_m": nearest_park_m,
         "count_amenities_275m": count_amenities_275m,
+        # "nearest_dining_hall_m": nearest_dining_hall_m,
         "avg_dist_3_amenities_m": avg_dist_3_amenities_m,
         "park_area_within_275m": park_area_within_275m,
         "park_area_within_550m": park_area_within_550m,
         "median_age": median_age,
         "median_income": median_income,
-        "count_population": count_population,
+        # "count_population": count_population,
         "population_density": population_density,
         "undergrad_percentage": undergrad_percentage,
         "grad_percentage": grad_percentage,
         # "west_campus_area_within_275m": west_campus_area_within_275m,
         # "west_campus_area_within_550m": west_campus_area_within_550m,
         # "distance_to_west_campus_m": distance_to_west_campus_m,
-        # "distance_to_ut_m": distance_to_ut_m,
-        # "ut_area_within_275m": ut_area_within_275m,
-        # "ut_area_within_550m": ut_area_within_550m,
+        "distance_to_ut_m": distance_to_ut_m,
+        "ut_area_within_275m": ut_area_within_275m,
+        "ut_area_within_550m": ut_area_within_550m,
         "jobs_count_within_275m": jobs_count_within_275m,
         "jobs_count_within_550m": jobs_count_within_550m,
         "nearest_retail_m": nearest_retail_m,

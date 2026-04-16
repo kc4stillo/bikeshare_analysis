@@ -20,26 +20,27 @@ pd.set_option("display.max_colwidth", None)
 df = pd.read_csv("../../data/g_transit/clean/stations.csv")
 
 ut = [
-    # "dean_keeton_park_place",
-    # "deen_keeton_whitis",
-    # "dean_keeton_robert_dedman_dr",
-    # "dean_keeton_whitisdean_keeton_speedway",
-    # "dean_keeton_whitis",
-    # "e_21st_speedway_at_pcl",
-    # "e_23rd_san_jacinto_at_dkr_stadium",
-    # "guadalupe_west_mall_at_university_co-op",
-    # "w_21st_guadalupe",
-    # "w_21st_university",
-    # "w_225_rio_grande",
-    # "w_22nd_pearl",
-    # "w_23rd_san_gabriel",
-    # "w_26th_nueces",
-    # "w_28th_rio_grande",
+    "dean_keeton_park_place",
+    "deen_keeton_whitis",
+    "dean_keeton_robert_dedman_dr",
+    "dean_keeton_whitisdean_keeton_speedway",
+    "dean_keeton_whitis",
+    "e_21st_speedway_at_pcl",
+    "e_23rd_san_jacinto_at_dkr_stadium",
+    "guadalupe_west_mall_at_university_co-op",
+    "w_21st_guadalupe",
+    "w_21st_university",
+    "w_225_rio_grande",
+    "w_22nd_pearl",
+    "w_23rd_san_gabriel",
+    "w_26th_nueces",
+    "w_28th_rio_grande",
 ]
 
 # keep station names for the residual table
-station_names = df.loc[~df["name"].isin(ut), "name"]
-df = df[~df["name"].isin(ut)]
+# station_names = df.loc[~df["name"].isin(ut), "name"]
+station_names = df["name"]
+# df = df[~df["name"].isin(ut)]
 
 
 # model dataset
@@ -56,29 +57,33 @@ ml_df = df.drop(
         "count_undergrad",
         "count_grad",
         "bikeable_infrastructure",
-        "median_age",
-        "median_income",
-        "count_population",
-        "count_undergrad",
-        "count_grad",
-        "population_density",
-        "undergrad_percentage",
-        "grad_percentage",
-        # "west_campus_area_within_275m",
-        # "west_campus_area_within_550m",
-        # "distance_to_west_campus_m",
+        # "median_age",
+        # "median_income",
+        # "count_population",
+        # "count_undergrad",
+        # "count_grad",
+        # "population_density",
+        # "undergrad_percentage",
+        # "grad_percentage",
+        "west_campus_area_within_275m",
+        "west_campus_area_within_550m",
+        "distance_to_west_campus_m",
         # "distance_to_ut_m",
         # "ut_area_within_275m",
         # "ut_area_within_550m",
         # "nearest_dining_hall_m",
         # "west_campus_area_within_275m",
         # "west_campus_area_within_550m",
-        # "nearest_dining_hall_m",
+        "nearest_dining_hall_m",
         # "nearest_retail_m",
         # "count_amenities_275m",
-        # "nearest_bikeshare_station_m",
+        "nearest_bikeshare_station_m",
+        # "jobs_count_within_550m",
+        # "jobs_count_within_275m"
     ]
 )
+
+ml_df.columns
 
 # target on original scale
 y = ml_df["trips_per_dock"]
@@ -94,7 +99,7 @@ y_log = np.log1p(y)
 # Train / test split
 # -----------------------------
 X_train, X_test, y_train_log, y_test_log, names_train, names_test = train_test_split(
-    X, y_log, station_names, test_size=0.2, random_state=21
+    X, y_log, station_names, test_size=0.2, random_state=56
 )
 
 # original-scale y for evaluation

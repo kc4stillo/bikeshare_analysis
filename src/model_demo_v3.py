@@ -42,9 +42,9 @@ retail = pd.read_csv("../data/f_retail/clean/retail.csv")
 transit = pd.read_csv("../data/g_transit/clean/transit.csv")
 
 # %%
-future_station_name = "e_7th"
-lat = 30.250983619047346
-lon = -97.69605867717421
+future_station_name = "speedway x 30th"
+lat = 30.293132965318765
+lon = -97.73609181977253
 docks = 9
 
 # load trained model
@@ -322,7 +322,7 @@ if importance_df is not None:
 # Local interpretability
 # -----------------------------
 contrib_df = explain_single_prediction_shap(model, X_new, top_n=28)
-# summarize_local_effects(contrib_df, top_n=5)
+summarize_local_effects(contrib_df, top_n=5)
 
 # %%
 import pandas as pd

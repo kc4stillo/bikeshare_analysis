@@ -14,9 +14,6 @@ pd.set_option("display.max_columns", None)
 pd.set_option("display.max_colwidth", None)
 
 # %%
-# -----------------------------
-# Load data
-# -----------------------------
 df = pd.read_csv("../../data/g_transit/clean/stations.csv")
 
 # keep station names for the residual table
