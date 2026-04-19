@@ -225,3 +225,227 @@ joblib.dump(model, "v8_general.pkl")
 # save exact training column order
 with open("v8_general.json", "w") as f:
     json.dump(X.columns.tolist(), f)
+
+
+# %%
+# %%
+# -----------------------------
+# Separate wide / horizontal plots
+# -----------------------------
+import matplotlib.pyplot as plt
+import numpy as np
+
+plt.rcParams["figure.dpi"] = 150
+plt.rcParams["savefig.dpi"] = 300
+plt.rcParams["font.size"] = 11
+
+
+# -----------------------------------
+# 1) Predicted vs Actual scatter plot
+# -----------------------------------
+fig, ax = plt.subplots(figsize=(14, 4.4))
+
+ax.scatter(y_test_orig, y_pred_orig, alpha=0.8)
+
+min_val = min(y_test_orig.min(), y_pred_orig.min())
+max_val = max(y_test_orig.max(), y_pred_orig.max())
+ax.plot([min_val, max_val], [min_val, max_val], linestyle="--")
+
+ax.set_title("Predicted vs. Actual Trips per Dock", fontweight="bold")
+ax.set_xlabel("Actual trips per dock")
+ax.set_ylabel("Predicted trips per ")
+ax.grid(True, alpha=0.3)
+
+top_misses = residual_table.nlargest(3, "abs_residual")
+for _, row in top_misses.iterrows():
+    ax.annotate(
+        row["station"],
+        (row["actual_trips_per_dock"], row["predicted_trips_per_dock"]),
+        xytext=(5, 5),
+        textcoords="offset points",
+        fontsize=8,
+    )
+
+plt.tight_layout()
+plt.show()
+# fig.savefig("predicted_vs_actual_wide.png", bbox_inches="tight")
+
+
+# -----------------------------------
+# 2) 5-fold CV scores plot
+# -----------------------------------
+fig, ax = plt.subplots(figsize=(9, 4.4))
+
+fold_nums = np.arange(1, len(cv_scores) + 1)
+
+ax.plot(fold_nums, cv_scores, marker="o")
+ax.axhline(cv_scores.mean(), linestyle="--", label=f"Mean = {cv_scores.mean():.3f}")
+
+ax.set_title("5-Fold Cross-Validation R² Scores", fontweight="bold")
+ax.set_xlabel("Fold")
+ax.set_ylabel("R²")
+ax.set_xticks(fold_nums)
+ax.legend(frameon=False)
+ax.grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.show()
+# fig.savefig("cv_scores_wide.png", bbox_inches="tight")
+
+
+# -----------------------------------
+# 3) Top feature importances
+# -----------------------------------
+top_n = 12
+top_features = feature_importance.head(top_n).copy()
+top_features = top_features.sort_values("importance", ascending=True)
+
+fig, ax = plt.subplots(figsize=(8, 4.4))
+
+ax.barh(top_features["feature"], top_features["importance"])
+
+ax.set_title(f"Top {top_n} Feature Importances", fontweight="bold")
+ax.set_xlabel("Importance")
+ax.set_ylabel("")
+
+plt.tight_layout()
+plt.show()
+# fig.savefig("top_feature_importance_wide.png", bbox_inches="tight")
+
+
+# %%
+# pip install adjustText   # run once if needed
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from adjustText import adjust_text
+
+# Build plotting dataframe
+plot_df = pd.DataFrame(
+    {
+        "station": names_test.values,
+        "actual": y_test_orig.values,
+        "predicted": y_pred_orig,
+    }
+)
+
+fig, ax = plt.subplots(figsize=(14, 4.4))
+
+# Scatter points
+ax.scatter(plot_df["actual"], plot_df["predicted"], alpha=0.8)
+
+# 45-degree reference line
+min_val = min(plot_df["actual"].min(), plot_df["predicted"].min())
+max_val = max(plot_df["actual"].max(), plot_df["predicted"].max())
+ax.plot([min_val, max_val], [min_val, max_val], linestyle="--")
+
+# Create text labels for every point
+texts = []
+for _, row in plot_df.iterrows():
+    texts.append(
+        ax.text(
+            row["actual"],
+            row["predicted"],
+            row["station"],
+            fontsize=7,
+            ha="left",
+            va="bottom",
+        )
+    )
+
+# Automatically repel labels from each other and from points
+adjust_text(
+    texts,
+    x=plot_df["actual"].values,
+    y=plot_df["predicted"].values,
+    ax=ax,
+    expand=(1.15, 1.25),
+    force_text=(0.8, 1.0),
+    force_points=(0.5, 0.8),
+    arrowprops=dict(arrowstyle="-", lw=0.5, alpha=0.6),
+)
+
+ax.set_title("Predicted vs. Actual Trips per Dock", fontweight="bold")
+ax.set_xlabel("Actual trips per dock")
+ax.set_ylabel("Predicted trips per dock")
+ax.grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.show()
+
+# fig.savefig("predicted_vs_actual_labeled.png", bbox_inches="tight")
+
+# %%
+# # pip install adjustText   # run once if needed
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from adjustText import adjust_text
+
+plot_df = pd.DataFrame(
+    {
+        "station": names_test.values,
+        "actual": y_test_orig.values,
+        "predicted": y_pred_orig,
+    }
+)
+
+fig, ax = plt.subplots(figsize=(9, 4.4))
+
+# scatter points
+ax.scatter(plot_df["actual"], plot_df["predicted"], alpha=0.8)
+
+# 45-degree reference line
+min_val = min(plot_df["actual"].min(), plot_df["predicted"].min())
+max_val = max(plot_df["actual"].max(), plot_df["predicted"].max())
+ax.plot([min_val, max_val], [min_val, max_val], linestyle="--")
+
+# labels with white boxes
+texts = []
+for _, row in plot_df.iterrows():
+    txt = ax.text(
+        row["actual"],
+        row["predicted"],
+        row["station"],
+        fontsize=9,
+        ha="left",
+        va="bottom",
+        bbox=dict(
+            boxstyle="round,pad=0.2",
+            facecolor="white",
+            edgecolor="none",
+            alpha=0.9,
+        ),
+        zorder=3,
+    )
+    texts.append(txt)
+
+# repel labels and draw connectors that stop before the text box
+adjust_text(
+    texts,
+    x=plot_df["actual"].values,
+    y=plot_df["predicted"].values,
+    ax=ax,
+    expand=(1.15, 1.30),
+    force_text=(0.9, 1.1),
+    force_points=(0.6, 0.9),
+    arrowprops=dict(
+        arrowstyle="-",
+        lw=0.5,
+        alpha=0.6,
+        shrinkA=6,  # keeps line from running into label box
+        shrinkB=4,  # keeps line off the point a bit
+    ),
+)
+
+ax.set_title("Predicted vs. Actual Trips per Dock", fontweight="bold")
+ax.set_xlabel("Actual trips per dock")
+ax.set_ylabel("Predicted trips per dock")
+ax.grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.show()
+
+# fig.savefig("predicted_vs_actual_labeled_clean.png", bbox_inches="tight")

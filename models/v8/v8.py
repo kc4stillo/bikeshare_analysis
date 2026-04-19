@@ -77,7 +77,7 @@ for col, val in zip(X.columns, monotone_constraints):
 # Train / test split
 # -----------------------------
 X_train, X_test, y_train_log, y_test_log, names_train, names_test = train_test_split(
-    X, y_log, station_names, test_size=0.2, random_state=21
+    X, y_log, station_names, test_size=0.2, random_state=56
 )
 
 # original-scale y for evaluation
@@ -130,7 +130,7 @@ print(f"RMSE : {rmse:.3f}")
 # 5-fold CV on log target
 # manual loop so feature_weights are applied in every fold
 # -----------------------------
-cv = KFold(n_splits=5, shuffle=True, random_state=42)
+cv = KFold(n_splits=5, shuffle=True, random_state=10)
 cv_scores = []
 
 for train_idx, val_idx in cv.split(X):

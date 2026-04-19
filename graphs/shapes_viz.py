@@ -1,142 +1,153 @@
 # %%
-import folium
+import contextily as cx
+import geopandas as gpd
+import matplotlib.pyplot as plt
 import pandas as pd
 from shapely import wkt
-from shapely.geometry import MultiPolygon, Polygon
 
 # %%
 # --------------------------------------------------
 # Load datasets
 # --------------------------------------------------
-north_campus_shape = pd.read_csv("../data/cleaned/coords/north_campus.csv")
-wampus_shape = pd.read_csv("../data/cleaned/coords/west_campus.csv")
-ut_shape = pd.read_csv("../data/cleaned/coords/ut_shape.csv")
-bikeshare_stations = pd.read_csv("../data/cleaned/coords/bikeshare_stations.csv")
+north_campus_shape = pd.read_csv("../data/d_ut_shapes/clean/north_campus.csv")
+wampus_shape = pd.read_csv("../data/d_ut_shapes/clean/west_campus.csv")
+ut_shape = pd.read_csv("../data/d_ut_shapes/clean/ut_shape.csv")
+bikeshare_stations = pd.read_csv("../data/d_ut_shapes/clean/stations.csv")
 
 # %%
 # --------------------------------------------------
-# Convert shape strings to shapely geometries
+# Station whitelist
 # --------------------------------------------------
-north_campus_shape["geometry"] = north_campus_shape["shape"].apply(wkt.loads)
-wampus_shape["geometry"] = wampus_shape["shape"].apply(wkt.loads)
-ut_shape["geometry"] = ut_shape["shape"].apply(wkt.loads)
-
-
-# %%
-# --------------------------------------------------
-# Helper function to add shapely polygons to folium
-# Shapely uses (lon, lat), but folium wants (lat, lon)
-# --------------------------------------------------
-def add_shape_to_map(fg, geometry, popup_text=None, color="blue", fill_opacity=0.25):
-    if isinstance(geometry, Polygon):
-        coords = [(lat, lon) for lon, lat in geometry.exterior.coords]
-        folium.Polygon(
-            locations=coords,
-            color=color,
-            weight=2,
-            fill=True,
-            fill_opacity=fill_opacity,
-            popup=popup_text,
-        ).add_to(fg)
-
-    elif isinstance(geometry, MultiPolygon):
-        for poly in geometry.geoms:
-            coords = [(lat, lon) for lon, lat in poly.exterior.coords]
-            folium.Polygon(
-                locations=coords,
-                color=color,
-                weight=2,
-                fill=True,
-                fill_opacity=fill_opacity,
-                popup=popup_text,
-            ).add_to(fg)
-
+ut = [
+    "dean_keeton_park_place",
+    "deen_keeton_whitis",
+    "dean_keeton_robert_dedman_dr",
+    "dean_keeton_whitisdean_keeton_speedway",
+    "dean_keeton_whitis",
+    "e_21st_speedway_at_pcl",
+    "e_23rd_san_jacinto_at_dkr_stadium",
+    "guadalupe_west_mall_at_university_co-op",
+    "w_21st_guadalupe",
+    "w_21st_university",
+    "w_225_rio_grande",
+    "w_22nd_pearl",
+    "w_23rd_san_gabriel",
+    "w_26th_nueces",
+    "w_28th_rio_grande",
+]
 
 # %%
 # --------------------------------------------------
-# Create base map
-# Centered roughly around UT / central Austin
+# Convert WKT strings to shapely geometries
 # --------------------------------------------------
-m = folium.Map(location=[30.285, -97.745], zoom_start=14, tiles="CartoDB positron")
+north_campus_shape["geometry"] = north_campus_shape["geometry"].apply(wkt.loads)
+wampus_shape["geometry"] = wampus_shape["geometry"].apply(wkt.loads)
+ut_shape["geometry"] = ut_shape["geometry"].apply(wkt.loads)
 
 # %%
 # --------------------------------------------------
-# Feature groups
+# Convert polygons to GeoDataFrames and project to Web Mercator
 # --------------------------------------------------
-fg_north = folium.FeatureGroup(name="North Campus", show=True)
-fg_wampus = folium.FeatureGroup(name="West Campus", show=True)
-fg_ut = folium.FeatureGroup(name="UT Shapes", show=True)
-fg_stations = folium.FeatureGroup(name="Bikeshare Stations", show=True)
+north_gdf = gpd.GeoDataFrame(north_campus_shape, geometry="geometry", crs="EPSG:4326")
+wampus_gdf = gpd.GeoDataFrame(wampus_shape, geometry="geometry", crs="EPSG:4326")
+ut_gdf = gpd.GeoDataFrame(ut_shape, geometry="geometry", crs="EPSG:4326")
+
+polygons_gdf = pd.concat([ut_gdf, north_gdf, wampus_gdf], ignore_index=True)
+polygons_gdf = gpd.GeoDataFrame(
+    polygons_gdf, geometry="geometry", crs="EPSG:4326"
+).to_crs(epsg=3857)
 
 # %%
 # --------------------------------------------------
-# Add North Campus polygon(s)
+# Detect station columns
 # --------------------------------------------------
-for _, row in north_campus_shape.iterrows():
-    add_shape_to_map(
-        fg_north,
-        row["geometry"],
-        popup_text=row["name"],
-        color="green",
-        fill_opacity=0.20,
+lat_candidates = ["lat", "latitude", "Lat", "Latitude"]
+lon_candidates = ["lon", "lng", "long", "longitude", "Lon", "Longitude"]
+name_candidates = [
+    "station",
+    "station_name",
+    "name",
+    "kiosk_name",
+    "slug",
+    "id",
+    "station_id",
+]
+
+lat_col = next((c for c in lat_candidates if c in bikeshare_stations.columns), None)
+lon_col = next((c for c in lon_candidates if c in bikeshare_stations.columns), None)
+name_col = next((c for c in name_candidates if c in bikeshare_stations.columns), None)
+
+if lat_col is None or lon_col is None:
+    raise ValueError(
+        f"Could not find station latitude/longitude columns. "
+        f"Available columns: {list(bikeshare_stations.columns)}"
+    )
+
+if name_col is None:
+    raise ValueError(
+        f"Could not find a station name/id column to filter on. "
+        f"Available columns: {list(bikeshare_stations.columns)}"
     )
 
 # %%
 # --------------------------------------------------
-# Add West Campus polygon(s)
+# Filter to selected stations only
 # --------------------------------------------------
-for _, row in wampus_shape.iterrows():
-    add_shape_to_map(
-        fg_wampus,
-        row["geometry"],
-        popup_text=row["name"],
-        color="orange",
-        fill_opacity=0.20,
-    )
+stations_df = bikeshare_stations.copy()
+stations_df[name_col] = stations_df[name_col].astype(str).str.strip()
+
+stations_df = (
+    stations_df[stations_df[name_col].isin(ut)].dropna(subset=[lat_col, lon_col]).copy()
+)
+
+stations_gdf = gpd.GeoDataFrame(
+    stations_df,
+    geometry=gpd.points_from_xy(stations_df[lon_col], stations_df[lat_col]),
+    crs="EPSG:4326",
+).to_crs(epsg=3857)
 
 # %%
 # --------------------------------------------------
-# Add UT polygon(s)
+# Plot
 # --------------------------------------------------
-for _, row in ut_shape.iterrows():
-    add_shape_to_map(
-        fg_ut,
-        row["geometry"],
-        popup_text=row["name"],
-        color="red",
-        fill_opacity=0.15,
-    )
+plt.close("all")
+fig, ax = plt.subplots(figsize=(30, 20), dpi=150)
+
+color = "#001589"
+
+# Plot polygons first
+polygons_gdf.plot(
+    ax=ax,
+    color=color,
+    alpha=0.18,
+    edgecolor=color,
+    linewidth=1.5,
+    zorder=2,
+)
+
+# Plot stations as dots
+stations_gdf.plot(
+    ax=ax,
+    markersize=70,
+    color=color,
+    alpha=0.9,
+    edgecolor="white",
+    linewidth=0.5,
+    zorder=3,
+)
 
 # %%
-# --------------------------------------------------
-# Add bikeshare stations
-# --------------------------------------------------
-for _, row in bikeshare_stations.iterrows():
-    if pd.notnull(row["lat"]) and pd.notnull(row["lon"]):
-        popup_text = f"""
-        <b>Scoring Name:</b> {row["scoring_name"]}<br>
-        <b>Cleaned Name:</b> {row["cleaned_name"]}<br>
-        <b>Coordinate Name:</b> {row["coordinate_name"]}
-        """
 
-        folium.CircleMarker(
-            location=[row["lat"], row["lon"]],
-            radius=5,
-            popup=folium.Popup(popup_text, max_width=300),
-            color="blue",
-            fill=True,
-            fill_opacity=0.9,
-        ).add_to(fg_stations)
+# Add basemap and preserve the current extent
+cx.add_basemap(
+    ax,
+    source=cx.providers.CartoDB.Positron,
+    crs=polygons_gdf.crs,
+    reset_extent=False,
+    zoom="auto",
+)
 
-# %%
-# --------------------------------------------------
-# Add layers to map
-# --------------------------------------------------
-fg_north.add_to(m)
-fg_wampus.add_to(m)
-fg_ut.add_to(m)
-fg_stations.add_to(m)
-
-folium.LayerControl(collapsed=False).add_to(m)
-
-m
+ax.set_axis_off()
+plt.tight_layout()
+plt.savefig("campus_polygons_with_ut_stations.png", dpi=300, bbox_inches="tight")
+plt.show()
