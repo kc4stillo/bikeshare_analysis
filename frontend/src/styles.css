@@ -1,14 +1,9 @@
-import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
-import App from "./App";
-
-const rootElement = document.getElementById("root");
-const root = createRoot(rootElement);
-
-root.render(
-  <StrictMode>
-    <h1>React Leaflet Tutorial</h1>
-    <App />
-  </StrictMode>
-);
+#root {
+  height: 100vh;
+}
