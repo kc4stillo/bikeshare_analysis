@@ -1,9 +1,14 @@
-* {
-  box-sizing: border-box;
+html,
+body,
+#root {
+  height: 100%;
   margin: 0;
-  padding: 0;
 }
 
-#root {
-  height: 100vh;
+.leaflet-container {
+  background: #f2f2f2;
+}
+
+.leaflet-tile {
+  filter: grayscale(10%) brightness(1.08) contrast(0.92);
 }
