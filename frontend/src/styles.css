@@ -1,14 +1,18 @@
-html,
-body,
-#root {
-  height: 100%;
-  margin: 0;
+.pulse-ring {
+  animation: pulseStation 0.75s ease-out;
+  transform-origin: center;
 }
 
-.leaflet-container {
-  background: #f2f2f2;
-}
+@keyframes pulseStation {
+  0% {
+    stroke-opacity: 0.95;
+    fill-opacity: 0.45;
+    stroke-width: 3;
+  }
 
-.leaflet-tile {
-  filter: grayscale(10%) brightness(1.08) contrast(0.92);
+  100% {
+    stroke-opacity: 0;
+    fill-opacity: 0;
+    stroke-width: 0;
+  }
 }

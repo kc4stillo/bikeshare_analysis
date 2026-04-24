@@ -94,6 +94,9 @@ X = ml_df.drop(columns=["trips_per_dock"])
 # log target for training
 y_log = np.log1p(y)
 
+ml_df.to_csv("v8_general_training.csv", index=None)
+
+
 # %%
 # -----------------------------
 # Train / test split
