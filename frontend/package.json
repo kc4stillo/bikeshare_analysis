@@ -4,6 +4,9 @@
   "description": "",
   "keywords": [],
   "main": "src/index.js",
+  "engines": {
+    "node": "20.x"
+  },
   "dependencies": {
     "leaflet": "1.9.3",
     "react": "18.2.0",
