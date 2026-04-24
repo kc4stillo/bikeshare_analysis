@@ -98,6 +98,7 @@ export default function App() {
   const [prediction, setPrediction] = useState(null);
   const [topSummary, setTopSummary] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [stationComparison, setStationComparison] = useState(null);
 
   useEffect(() => {
     fetch("/travis_county.geojson")
@@ -154,6 +155,7 @@ export default function App() {
         setFeatureResults(data.features);
         setPrediction(data.predicted_trips_per_dock);
         setTopSummary(data.top_feature_summary || []);
+        setStationComparison(data.station_comparison);
       } else {
         console.error("Backend returned error:", data.error);
         alert(`Backend error: ${data.error}`);
@@ -245,6 +247,30 @@ export default function App() {
               {Math.round(prediction).toLocaleString()}
             </div>
           )}
+          {stationComparison && (
+  <div
+    style={{
+      marginBottom: "14px",
+      padding: "10px",
+      background: "#f4f7f9",
+      borderRadius: "8px",
+      borderLeft: "4px solid #007bba",
+    }}
+  >
+    <div>
+      <b>Compared to existing stations:</b>
+    </div>
+
+    <div>
+      Rank: {stationComparison.rank_position} of{" "}
+      {stationComparison.total_stations_plus_candidate}
+    </div>
+
+    <div>
+      Percentile: {stationComparison.rank_percentile.toFixed(1)}%
+    </div>
+  </div>
+)}
 
           <div>
             <b>Transit Stops (275m):</b>{" "}

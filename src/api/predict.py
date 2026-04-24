@@ -9,9 +9,79 @@ from src.api.feature_builder import build_features_for_point
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 MODEL_PATH = PROJECT_ROOT / "models" / "v8" / "v8_general.pkl"
 REFERENCE_X_PATH = PROJECT_ROOT / "models" / "v8" / "v8_general_training.csv"
+
+STATIONS_PATH = PROJECT_ROOT / "data" / "a_stations" / "stations.csv"
+stations_reference = pd.read_csv(STATIONS_PATH)
+
 reference_X = pd.read_csv(REFERENCE_X_PATH)
 
 model = joblib.load(MODEL_PATH)
+
+
+def build_station_comparison(
+    pred_trips_per_dock: float,
+    stations_df: pd.DataFrame,
+    candidate_name: str = "Your selected location",
+) -> dict:
+    """
+    Compare the predicted candidate station against existing stations.
+    Expects stations_df to contain a trips_per_dock column and some kind of station name column.
+    """
+
+    df = stations_df.copy()
+
+    # Adjust these if your actual column names are different
+    possible_name_cols = ["name", "station", "station_name"]
+    possible_trip_cols = ["trips_per_dock", "actual_trips_per_dock"]
+
+    name_col = next((col for col in possible_name_cols if col in df.columns), None)
+    trips_col = next((col for col in possible_trip_cols if col in df.columns), None)
+
+    if trips_col is None:
+        raise ValueError("Could not find trips_per_dock column in stations dataframe.")
+
+    if name_col is None:
+        df["name"] = [f"Station {i + 1}" for i in range(len(df))]
+        name_col = "name"
+
+    df = df[[name_col, trips_col]].copy()
+    df = df.rename(columns={name_col: "name", trips_col: "trips_per_dock"})
+    df["trips_per_dock"] = pd.to_numeric(df["trips_per_dock"], errors="coerce")
+    df = df.dropna(subset=["trips_per_dock"])
+
+    rank_percentile = float((df["trips_per_dock"] <= pred_trips_per_dock).mean() * 100)
+
+    candidate_row = pd.DataFrame(
+        {
+            "name": [candidate_name],
+            "trips_per_dock": [pred_trips_per_dock],
+            "is_candidate": [True],
+        }
+    )
+
+    df["is_candidate"] = False
+
+    combined = pd.concat([df, candidate_row], ignore_index=True)
+    combined = combined.sort_values("trips_per_dock", ascending=False).reset_index(
+        drop=True
+    )
+
+    candidate_idx = combined.index[combined["is_candidate"]].tolist()[0]
+
+    rank_position = int(candidate_idx + 1)
+    total_stations = int(len(combined))
+
+    start_idx = max(candidate_idx - 3, 0)
+    end_idx = min(candidate_idx + 4, len(combined))
+
+    context_df = combined.iloc[start_idx:end_idx].copy()
+
+    return {
+        "rank_percentile": rank_percentile,
+        "rank_position": rank_position,
+        "total_stations_plus_candidate": total_stations,
+        "nearby_rank_context": context_df.to_dict(orient="records"),
+    }
 
 
 def percentile_rank(series, value):
@@ -97,6 +167,11 @@ def predict_for_point(lat: float, lon: float, docks: int = 19) -> dict:
     # If your model was trained on log1p target:
     predicted_trips_per_dock = np.expm1(pred_log)
 
+    station_comparison = build_station_comparison(
+        pred_trips_per_dock=predicted_trips_per_dock,
+        stations_df=stations_reference,
+    )
+
     summary = build_prediction_summary(
         X_new=X,
         reference_X=reference_X,
@@ -109,5 +184,6 @@ def predict_for_point(lat: float, lon: float, docks: int = 19) -> dict:
         "predicted_trips_per_dock": float(predicted_trips_per_dock),
         "predicted_log": float(pred_log),
         "features": features,
+        "station_comparison": station_comparison,
         **summary,
     }
