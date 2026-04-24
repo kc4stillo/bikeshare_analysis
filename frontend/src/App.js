@@ -90,6 +90,97 @@ function ClickPoint({ selectedPoint, setSelectedPoint }) {
     </>
   );
 }
+function StationComparisonChart({ stationComparison }) {
+  if (!stationComparison || !stationComparison.all_station_rankings) return null;
+
+  const rows = stationComparison.all_station_rankings;
+  const maxTrips = Math.max(...rows.map((row) => row.trips_per_dock));
+
+  return (
+    <div style={{ marginTop: "16px" }}>
+      <h4 style={{ marginBottom: "8px", color: "#007bba" }}>
+        Station Ranking
+      </h4>
+
+      <div
+        style={{
+          marginBottom: "10px",
+          padding: "10px",
+          background: "#f4f7f9",
+          borderRadius: "8px",
+          borderLeft: "4px solid #007bba",
+        }}
+      >
+        <div>
+          <b>Rank:</b> {stationComparison.rank_position} of{" "}
+          {stationComparison.total_stations_plus_candidate}
+        </div>
+        <div>
+          <b>Percentile:</b>{" "}
+          {stationComparison.rank_percentile.toFixed(1)}%
+        </div>
+      </div>
+
+      <div
+        style={{
+          maxHeight: "260px",
+          overflowY: "auto",
+          paddingRight: "4px",
+        }}
+      >
+        {rows.map((row) => {
+          const widthPercent = (row.trips_per_dock / maxTrips) * 100;
+
+          return (
+            <div
+              key={`${row.rank}-${row.name}`}
+              style={{
+                marginBottom: "7px",
+                padding: row.is_candidate ? "7px" : "0",
+                borderRadius: "8px",
+                background: row.is_candidate ? "#e6f4fa" : "transparent",
+                border: row.is_candidate ? "1px solid #007bba" : "none",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontSize: "12px",
+                  marginBottom: "2px",
+                  fontWeight: row.is_candidate ? "bold" : "normal",
+                }}
+              >
+                <span>
+                  #{row.rank} {row.is_candidate ? "Your location" : row.name}
+                </span>
+                <span>{Math.round(row.trips_per_dock).toLocaleString()}</span>
+              </div>
+
+              <div
+                style={{
+                  height: "8px",
+                  background: "#e5e5e5",
+                  borderRadius: "999px",
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  style={{
+                    height: "100%",
+                    width: `${widthPercent}%`,
+                    background: row.is_candidate ? "#007bba" : "#b8c4cc",
+                    borderRadius: "999px",
+                  }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export default function App() {
   const [countyGeoJson, setCountyGeoJson] = useState(null);
@@ -214,125 +305,227 @@ export default function App() {
       )}
 
       {featureResults && (
-        <div
-          style={{
-            position: "absolute",
-            bottom: "20px",
-            left: "20px",
-            zIndex: 1000,
-            background: "white",
-            padding: "16px",
-            borderRadius: "10px",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-            maxWidth: "340px",
-            maxHeight: "75vh",
-            overflowY: "auto",
-            fontSize: "14px",
-          }}
-        >
-          <h3 style={{ marginBottom: "10px", color: "#007bba" }}>
-            Location Insights
-          </h3>
-
-          {prediction && (
-            <div
-              style={{
-                fontSize: "24px",
-                fontWeight: "bold",
-                color: "#007bba",
-                marginBottom: "12px",
-              }}
-            >
-              Predicted Trips per Dock:{" "}
-              {Math.round(prediction).toLocaleString()}
-            </div>
-          )}
-          {stationComparison && (
   <div
     style={{
-      marginBottom: "14px",
-      padding: "10px",
-      background: "#f4f7f9",
-      borderRadius: "8px",
-      borderLeft: "4px solid #007bba",
+      position: "absolute",
+      bottom: "20px",
+      left: "20px",
+      zIndex: 1000,
+      background: "white",
+      padding: "16px",
+      borderRadius: "10px",
+      boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+      width: "370px",
+      maxHeight: "78vh",
+      overflowY: "auto",
+      fontSize: "14px",
     }}
   >
-    <div>
-      <b>Compared to existing stations:</b>
-    </div>
+    <h3 style={{ marginBottom: "10px", color: "#007bba" }}>
+      Location Insights
+    </h3>
 
-    <div>
-      Rank: {stationComparison.rank_position} of{" "}
-      {stationComparison.total_stations_plus_candidate}
-    </div>
+    {prediction && (
+      <div
+        style={{
+          fontSize: "24px",
+          fontWeight: "bold",
+          color: "#007bba",
+          marginBottom: "12px",
+          lineHeight: "1.15",
+        }}
+      >
+        Predicted Trips per Dock:{" "}
+        {Math.round(prediction).toLocaleString()}
+      </div>
+    )}
 
-    <div>
-      Percentile: {stationComparison.rank_percentile.toFixed(1)}%
-    </div>
-  </div>
-)}
+    {stationComparison && (
+      <div
+        style={{
+          marginBottom: "14px",
+          padding: "10px",
+          background: "#f4f7f9",
+          borderRadius: "8px",
+          borderLeft: "4px solid #007bba",
+        }}
+      >
+        <div style={{ fontWeight: "bold", marginBottom: "4px" }}>
+          Compared to Existing Stations
+        </div>
 
-          <div>
-            <b>Transit Stops (275m):</b>{" "}
-            {featureResults.count_transit_stop_275m}
-          </div>
+        <div>
+          Rank: {stationComparison.rank_position} of{" "}
+          {stationComparison.total_stations_plus_candidate}
+        </div>
 
-          <div>
-            <b>Amenities (275m):</b> {featureResults.count_amenities_275m}
-          </div>
+        <div>
+          Percentile: {stationComparison.rank_percentile.toFixed(1)}%
+        </div>
+      </div>
+    )}
 
-          <div>
-            <b>Jobs (275m):</b> {featureResults.jobs_count_within_275m}
-          </div>
+    {stationComparison?.all_station_rankings && (
+      <div style={{ marginBottom: "16px" }}>
+        <h4 style={{ marginBottom: "8px", color: "#007bba" }}>
+          Station Ranking
+        </h4>
 
-          <div style={{ marginTop: "8px" }}>
-            <b>Nearest Station:</b>{" "}
-            {Math.round(featureResults.nearest_bikeshare_station_m)} m
-          </div>
+        <div
+          style={{
+            maxHeight: "260px",
+            overflowY: "auto",
+            paddingRight: "4px",
+          }}
+        >
+          {stationComparison.all_station_rankings.map((row) => {
+            const maxTrips = Math.max(
+              ...stationComparison.all_station_rankings.map(
+                (station) => station.trips_per_dock
+              )
+            );
 
-          <div>
-            <b>Population Density:</b>{" "}
-            {featureResults.population_density?.toFixed(4)}
-          </div>
+            const widthPercent = Math.max(
+              3,
+              (row.trips_per_dock / maxTrips) * 100
+            );
 
-          {topSummary.length > 0 && (
-            <div style={{ marginTop: "16px" }}>
-              <h4 style={{ marginBottom: "8px", color: "#007bba" }}>
-                Why this score?
-              </h4>
-
-              {topSummary.slice(0, 5).map((row) => (
+            return (
+              <div
+                key={`${row.rank}-${row.name}`}
+                style={{
+                  marginBottom: "8px",
+                  padding: row.is_candidate ? "7px" : "0",
+                  borderRadius: "8px",
+                  background: row.is_candidate ? "#e6f4fa" : "transparent",
+                  border: row.is_candidate ? "1px solid #007bba" : "none",
+                }}
+              >
                 <div
-                  key={row.feature}
                   style={{
-                    marginBottom: "8px",
-                    padding: "8px",
-                    borderRadius: "8px",
-                    background: "#f4f7f9",
-                    borderLeft: `4px solid ${
-                      row.shap_value >= 0 ? "#007bba" : "#999"
-                    }`,
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: "8px",
+                    fontSize: "12px",
+                    marginBottom: "3px",
+                    fontWeight: row.is_candidate ? "bold" : "normal",
                   }}
                 >
-                  <div>
-                    <b>{row.feature}</b>
-                  </div>
+                  <span
+                    style={{
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    #{row.rank}{" "}
+                    {row.is_candidate ? "Your location" : row.name}
+                  </span>
 
-                  <div>
-                    {row.shap_value >= 0 ? "Increases" : "Decreases"}{" "}
-                    prediction
-                  </div>
-
-                  <div style={{ fontSize: "12px", color: "#555" }}>
-                    percentile: {Math.round(row.percentile_rank)} ·{" "}
-                    {row.relative_to_median}
-                  </div>
+                  <span>
+                    {Math.round(row.trips_per_dock).toLocaleString()}
+                  </span>
                 </div>
-              ))}
-            </div>
-          )}
+
+                <div
+                  style={{
+                    height: "8px",
+                    background: "#e5e5e5",
+                    borderRadius: "999px",
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
+                    style={{
+                      height: "100%",
+                      width: `${widthPercent}%`,
+                      background: row.is_candidate ? "#007bba" : "#b8c4cc",
+                      borderRadius: "999px",
+                    }}
+                  />
+                </div>
+              </div>
+            );
+          })}
         </div>
-      )}
+      </div>
+    )}
+
+    <div
+      style={{
+        marginBottom: "14px",
+        padding: "10px",
+        background: "#fafafa",
+        borderRadius: "8px",
+      }}
+    >
+      <h4 style={{ marginBottom: "8px", color: "#007bba" }}>
+        Nearby Attributes
+      </h4>
+
+      <div>
+        <b>Transit Stops (275m):</b>{" "}
+        {featureResults.count_transit_stop_275m}
+      </div>
+
+      <div>
+        <b>Amenities (275m):</b>{" "}
+        {featureResults.count_amenities_275m}
+      </div>
+
+      <div>
+        <b>Jobs (275m):</b>{" "}
+        {featureResults.jobs_count_within_275m}
+      </div>
+
+      <div style={{ marginTop: "8px" }}>
+        <b>Nearest Station:</b>{" "}
+        {Math.round(featureResults.nearest_bikeshare_station_m)} m
+      </div>
+
+      <div>
+        <b>Population Density:</b>{" "}
+        {featureResults.population_density?.toFixed(4)}
+      </div>
+    </div>
+
+    {topSummary.length > 0 && (
+      <div style={{ marginTop: "16px" }}>
+        <h4 style={{ marginBottom: "8px", color: "#007bba" }}>
+          Why this score?
+        </h4>
+
+        {topSummary.slice(0, 5).map((row) => (
+          <div
+            key={row.feature}
+            style={{
+              marginBottom: "8px",
+              padding: "8px",
+              borderRadius: "8px",
+              background: "#f4f7f9",
+              borderLeft: `4px solid ${
+                row.shap_value >= 0 ? "#007bba" : "#999"
+              }`,
+            }}
+          >
+            <div>
+              <b>{row.feature}</b>
+            </div>
+
+            <div>
+              {row.shap_value >= 0 ? "Increases" : "Decreases"} prediction
+            </div>
+
+            <div style={{ fontSize: "12px", color: "#555" }}>
+              percentile: {Math.round(row.percentile_rank)} ·{" "}
+              {row.relative_to_median}
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+)}
 
       <MapContainer
         center={AUSTIN_CENTER}

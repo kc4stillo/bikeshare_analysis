@@ -24,13 +24,17 @@ def build_station_comparison(
     candidate_name: str = "Your selected location",
 ) -> dict:
     """
-    Compare the predicted candidate station against existing stations.
-    Expects stations_df to contain a trips_per_dock column and some kind of station name column.
+    Compare the predicted candidate station against all existing stations.
+
+    Returns:
+    - rank position
+    - percentile
+    - all stations + candidate sorted by trips_per_dock
+    - nearby context around the candidate
     """
 
     df = stations_df.copy()
 
-    # Adjust these if your actual column names are different
     possible_name_cols = ["name", "station", "station_name"]
     possible_trip_cols = ["trips_per_dock", "actual_trips_per_dock"]
 
@@ -38,7 +42,9 @@ def build_station_comparison(
     trips_col = next((col for col in possible_trip_cols if col in df.columns), None)
 
     if trips_col is None:
-        raise ValueError("Could not find trips_per_dock column in stations dataframe.")
+        raise ValueError(
+            "Could not find a trips_per_dock column in stations dataframe."
+        )
 
     if name_col is None:
         df["name"] = [f"Station {i + 1}" for i in range(len(df))]
@@ -46,41 +52,61 @@ def build_station_comparison(
 
     df = df[[name_col, trips_col]].copy()
     df = df.rename(columns={name_col: "name", trips_col: "trips_per_dock"})
+
     df["trips_per_dock"] = pd.to_numeric(df["trips_per_dock"], errors="coerce")
     df = df.dropna(subset=["trips_per_dock"])
 
-    rank_percentile = float((df["trips_per_dock"] <= pred_trips_per_dock).mean() * 100)
+    df["is_candidate"] = False
 
     candidate_row = pd.DataFrame(
         {
             "name": [candidate_name],
-            "trips_per_dock": [pred_trips_per_dock],
+            "trips_per_dock": [float(pred_trips_per_dock)],
             "is_candidate": [True],
         }
     )
 
-    df["is_candidate"] = False
-
     combined = pd.concat([df, candidate_row], ignore_index=True)
+
+    # Highest trips_per_dock gets rank 1
     combined = combined.sort_values("trips_per_dock", ascending=False).reset_index(
         drop=True
     )
+
+    combined["rank"] = combined.index + 1
 
     candidate_idx = combined.index[combined["is_candidate"]].tolist()[0]
 
     rank_position = int(candidate_idx + 1)
     total_stations = int(len(combined))
 
+    # Percentile: percent of existing stations at or below candidate value
+    rank_percentile = float((df["trips_per_dock"] <= pred_trips_per_dock).mean() * 100)
+
+    # Nearby context: 3 above and 3 below candidate
     start_idx = max(candidate_idx - 3, 0)
     end_idx = min(candidate_idx + 4, len(combined))
-
     context_df = combined.iloc[start_idx:end_idx].copy()
+
+    def clean_rows(rows_df):
+        rows = []
+        for _, row in rows_df.iterrows():
+            rows.append(
+                {
+                    "rank": int(row["rank"]),
+                    "name": str(row["name"]),
+                    "trips_per_dock": float(row["trips_per_dock"]),
+                    "is_candidate": bool(row["is_candidate"]),
+                }
+            )
+        return rows
 
     return {
         "rank_percentile": rank_percentile,
         "rank_position": rank_position,
         "total_stations_plus_candidate": total_stations,
-        "nearby_rank_context": context_df.to_dict(orient="records"),
+        "nearby_rank_context": clean_rows(context_df),
+        "all_station_rankings": clean_rows(combined),
     }
 
 
