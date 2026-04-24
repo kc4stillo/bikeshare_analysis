@@ -95,7 +95,7 @@ function ClickPoint({ selectedPoint, setSelectedPoint }) {
 async function getFeatures() {
   if (!selectedPoint) return;
 
-  const response = await fetch("http://127.0.0.1:8000/features", {
+  const response = await fetch("https://bikeshare-analysis.onrender.com/predict", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -107,7 +107,13 @@ async function getFeatures() {
   });
 
   const data = await response.json();
-  console.log("Backend response:", data);
+  console.log("Prediction response:", data);
+
+  if (data.success) {
+    setFeatureResults(data.features);
+    setPrediction(data.predicted_trips_per_dock);
+    setTopSummary(data.top_feature_summary || []);
+  }
 }
 
 export default function App() {
