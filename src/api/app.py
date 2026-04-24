@@ -47,3 +47,13 @@ def predict(point: PointRequest):
             "success": False,
             "error": str(e),
         }
+
+
+@app.get("/")
+def root():
+    return {"message": "Bikeshare API is running"}
+
+
+@app.get("/version")
+def version():
+    return {"version": "cors-wildcard-1", "cors": "allow-all"}
