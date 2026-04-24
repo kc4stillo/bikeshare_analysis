@@ -1,0 +1,179 @@
+.game-hint-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border: 1px solid #e8e8e8;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #111111;
+  padding: 10px 15px;
+  font-size: 0.95rem;
+  font-weight: 650;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  animation: fadeUp 0.65s ease both;
+  animation-delay: 0.78s;
+  transition: transform 0.18s ease, box-shadow 0.18s ease,
+    border-color 0.18s ease, background 0.18s ease;
+}
+
+.game-hint-button:hover {
+  transform: translateY(-2px);
+  border-color: #d6d6d6;
+  background: #fbfbfb;
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.07);
+}
+
+.start-screen .game-hint-button.start-screen-hints {
+  position: fixed;
+  bottom: 18px;
+  left: 22px;
+  z-index: 6000;
+}
+
+
+.game-hint-icon {
+  color: #007bba;
+  display: block;
+  flex-shrink: 0;
+}
+
+.game-hint-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 7000;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: fadeIn 0.22s ease both;
+}
+
+.game-hint-modal {
+  width: min(460px, 100%);
+  min-height: 420px;
+  background: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 28px;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.16);
+  padding: 34px;
+  position: relative;
+  animation: modalIn 0.28s ease both;
+}
+
+.game-hint-close {
+  position: absolute;
+  top: 18px;
+  right: 20px;
+  height: 34px;
+  width: 34px;
+  border: none;
+  border-radius: 50%;
+  background: #f3f3f3;
+  color: #111111;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+
+.game-hint-close:hover {
+  background: #e9e9e9;
+  transform: rotate(90deg);
+}
+
+.game-hint-modal-icon {
+  height: 54px;
+  width: 54px;
+  border-radius: 18px;
+  background: rgba(0, 123, 186, 0.1);
+  color: #007bba;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 22px;
+}
+
+.game-hint-modal h2 {
+  margin: 0 0 10px;
+  font-size: 2rem;
+  letter-spacing: -0.04em;
+  color: #111111;
+}
+
+.game-hint-intro {
+  margin: 0 0 22px;
+  color: #555555;
+  line-height: 1.55;
+  font-size: 1rem;
+}
+
+.game-hint-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.game-hint-list li {
+  position: relative;
+  padding-left: 24px;
+  color: #303030;
+  line-height: 1.45;
+  font-size: 0.98rem;
+}
+
+.game-hint-list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.58em;
+  height: 7px;
+  width: 7px;
+  border-radius: 50%;
+  background: #007bba;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modalIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.game-hint-button.map-screen-hints {
+  position: absolute;
+
+  /*
+    Outside the rounded map rectangle, bottom-left.
+    It sits in the extra visible space created by .map-canvas-area.
+  */
+  left: 0;
+  bottom: 0;
+  z-index: 1200;
+  transform: translateX(calc(-100% - 18px));
+
+  opacity: 0;
+  animation: fadeUp 0.65s ease both;
+  animation-delay: 1.55s;
+}
