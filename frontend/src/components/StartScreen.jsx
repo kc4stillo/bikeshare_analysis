@@ -67,7 +67,7 @@ export default function StartScreen({ onPlayStart, onTransitionComplete }) {
       <main className="start-content">
         <p className="start-eyebrow">CapMetro Bikeshare Planning Game</p>
 
-        <h1 className="start-title">Where should the next station go?</h1>
+        <h1 className="start-title">Where should the next Bikeshare station go?</h1>
 
         <p className="start-subtitle">
           Choose a location in Austin and see how well your station performs

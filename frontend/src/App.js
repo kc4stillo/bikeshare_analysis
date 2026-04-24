@@ -1,4 +1,5 @@
 import "leaflet/dist/leaflet.css";
+import L from "leaflet";
 import {
   MapContainer,
   TileLayer,
@@ -6,11 +7,14 @@ import {
   Polygon,
   CircleMarker,
   Popup,
+  useMap,
   useMapEvents,
 } from "react-leaflet";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import StartScreen from "./components/StartScreen";
 import HintsButton from "./components/HintsButton";
+import ContextLayers from "./components/ContextLayers";
+import StationResults, { ScoringOverlay } from "./components/StationResults";
 
 const API_URL = "https://bikeshare-analysis.onrender.com/predict";
 
@@ -94,27 +98,75 @@ function scaleCountyRings(rings, scale, center) {
   );
 }
 
-// -----------------------------
-// Format helpers
-// -----------------------------
-function formatNumber(value) {
-  if (value === null || value === undefined || Number.isNaN(Number(value))) {
-    return "N/A";
+function isPointInRing(point, ring) {
+  const [x, y] = point;
+  let inside = false;
+
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i];
+    const [xj, yj] = ring[j];
+
+    const intersects =
+      yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
+
+    if (intersects) {
+      inside = !inside;
+    }
   }
 
-  return Math.round(Number(value)).toLocaleString();
+  return inside;
 }
 
-function formatDecimal(value, digits = 1) {
-  if (value === null || value === undefined || Number.isNaN(Number(value))) {
-    return "N/A";
+function isPointInPolygonCoords(point, polygonCoords) {
+  if (!polygonCoords?.length) return false;
+
+  if (!isPointInRing(point, polygonCoords[0])) {
+    return false;
   }
 
-  return Number(value).toFixed(digits);
+  for (let i = 1; i < polygonCoords.length; i++) {
+    if (isPointInRing(point, polygonCoords[i])) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function geometryContainsPoint(geometry, point) {
+  if (!geometry) return false;
+
+  if (geometry.type === "Polygon") {
+    return isPointInPolygonCoords(point, geometry.coordinates);
+  }
+
+  if (geometry.type === "MultiPolygon") {
+    return geometry.coordinates.some((polygonCoords) =>
+      isPointInPolygonCoords(point, polygonCoords)
+    );
+  }
+
+  return false;
+}
+
+function geoJsonContainsPoint(geojson, point) {
+  if (!geojson) return false;
+
+  if (geojson.type === "FeatureCollection") {
+    return geojson.features?.some((feature) =>
+      geometryContainsPoint(feature.geometry, point)
+    );
+  }
+
+  if (geojson.type === "Feature") {
+    return geometryContainsPoint(geojson.geometry, point);
+  }
+
+  return geometryContainsPoint(geojson, point);
 }
 
 // -----------------------------
-// Map click marker
+// Map helpers
 // -----------------------------
 function ClickPoint({ selectedPoint, onPointSelect }) {
   useMapEvents({
@@ -168,43 +220,119 @@ function ClickPoint({ selectedPoint, onPointSelect }) {
   );
 }
 
+function MapInteractionWatcher({ enabled, shouldIgnoreInteraction, onInteract }) {
+  function handleMapInteraction() {
+    if (!enabled) return;
+    if (shouldIgnoreInteraction?.()) return;
+
+    onInteract();
+  }
+
+  useMapEvents({
+    dragstart: handleMapInteraction,
+    zoomstart: handleMapInteraction,
+  });
+
+  return null;
+}
+
+function PanSelectedPointIntoView({
+  selectedPoint,
+  enabled,
+  verticalPosition = 0.25,
+  onAutoPanStart,
+  onAutoPanEnd,
+}) {
+  const map = useMap();
+
+  const onAutoPanStartRef = useRef(onAutoPanStart);
+  const onAutoPanEndRef = useRef(onAutoPanEnd);
+
+  useEffect(() => {
+    onAutoPanStartRef.current = onAutoPanStart;
+    onAutoPanEndRef.current = onAutoPanEnd;
+  }, [onAutoPanStart, onAutoPanEnd]);
+
+  useEffect(() => {
+    if (!enabled || !selectedPoint) return;
+
+    const timeout = window.setTimeout(() => {
+      onAutoPanStartRef.current?.();
+
+      const zoom = map.getZoom();
+      const size = map.getSize();
+
+      const selectedProjectedPoint = map.project(
+        [selectedPoint.lat, selectedPoint.lon],
+        zoom
+      );
+
+      const mapCenterPixel = L.point(size.x / 2, size.y / 2);
+      const desiredPointPixel = L.point(size.x / 2, size.y * verticalPosition);
+
+      const newCenterProjectedPoint = selectedProjectedPoint
+        .add(mapCenterPixel)
+        .subtract(desiredPointPixel);
+
+      const newCenterLatLng = map.unproject(newCenterProjectedPoint, zoom);
+
+      let hasEnded = false;
+
+      function endAutoPan() {
+        if (hasEnded) return;
+        hasEnded = true;
+        onAutoPanEndRef.current?.();
+      }
+
+      map.once("moveend", endAutoPan);
+
+      map.flyTo(newCenterLatLng, zoom, {
+        animate: true,
+        duration: 0.85,
+        easeLinearity: 0.25,
+      });
+
+      window.setTimeout(endAutoPan, 1250);
+    }, 220);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [enabled, selectedPoint, verticalPosition, map]);
+
+  return null;
+}
+
 // -----------------------------
-// Floating map controls
+// Floating controls
 // -----------------------------
-function ScoreButton({ selectedPoint, isLoading, onScore }) {
+function ScoreButton({
+  selectedPoint,
+  isLoading,
+  hasScoredStation,
+  onScore,
+}) {
+  if (!selectedPoint || hasScoredStation) return null;
+
   return (
     <button
+      className={`score-location-button ${isLoading ? "is-loading" : ""}`}
       onClick={onScore}
-      disabled={!selectedPoint || isLoading}
-      style={{
-        position: "absolute",
-        top: "20px",
-        right: "20px",
-        zIndex: 1100,
-        padding: "12px 18px",
-        backgroundColor: selectedPoint ? "#007bba" : "#9aa8af",
-        color: "white",
-        border: "none",
-        borderRadius: "999px",
-        cursor: selectedPoint && !isLoading ? "pointer" : "not-allowed",
-        fontWeight: "bold",
-        boxShadow: "0 4px 14px rgba(0,0,0,0.18)",
-        transition: "transform 0.18s ease, background 0.18s ease",
-      }}
+      disabled={isLoading}
     >
-      {isLoading ? "Scoring..." : "Score Location"}
+      {isLoading ? "Scoring your station..." : "Score My Station"}
     </button>
   );
 }
 
-function SelectedPointCard({ selectedPoint }) {
-  if (!selectedPoint) return null;
+function SelectedPointCard({ selectedPoint, hasScoredStation }) {
+  if (!selectedPoint || hasScoredStation) return null;
 
   return (
     <div
       style={{
         position: "absolute",
-        top: "76px",
+        top: "20px",
         right: "20px",
         zIndex: 1100,
         background: "white",
@@ -221,256 +349,6 @@ function SelectedPointCard({ selectedPoint }) {
       <div>
         <b>Lon:</b> {selectedPoint.lon}
       </div>
-    </div>
-  );
-}
-
-// -----------------------------
-// Results components
-// -----------------------------
-function StationComparisonSummary({ stationComparison }) {
-  if (!stationComparison) return null;
-
-  return (
-    <div
-      style={{
-        marginBottom: "14px",
-        padding: "10px",
-        background: "#f4f7f9",
-        borderRadius: "10px",
-        borderLeft: "4px solid #007bba",
-      }}
-    >
-      <div style={{ fontWeight: "bold", marginBottom: "4px" }}>
-        Compared to Existing Stations
-      </div>
-
-      <div>
-        Rank: {stationComparison.rank_position} of{" "}
-        {stationComparison.total_stations_plus_candidate}
-      </div>
-
-      <div>
-        Percentile: {formatDecimal(stationComparison.rank_percentile, 1)}%
-      </div>
-    </div>
-  );
-}
-
-function StationRankingList({ stationComparison }) {
-  const rows = stationComparison?.all_station_rankings;
-
-  if (!rows?.length) return null;
-
-  const maxTrips = Math.max(...rows.map((row) => row.trips_per_dock || 0));
-
-  return (
-    <div style={{ marginBottom: "16px" }}>
-      <h4 style={{ marginBottom: "8px", color: "#007bba" }}>
-        Station Ranking
-      </h4>
-
-      <div
-        style={{
-          maxHeight: "260px",
-          overflowY: "auto",
-          paddingRight: "4px",
-        }}
-      >
-        {rows.map((row) => {
-          const widthPercent =
-            maxTrips > 0
-              ? Math.max(3, (row.trips_per_dock / maxTrips) * 100)
-              : 3;
-
-          return (
-            <div
-              key={`${row.rank}-${row.name}`}
-              style={{
-                marginBottom: "8px",
-                padding: row.is_candidate ? "7px" : "0",
-                borderRadius: "8px",
-                background: row.is_candidate ? "#e6f4fa" : "transparent",
-                border: row.is_candidate ? "1px solid #007bba" : "none",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  gap: "8px",
-                  fontSize: "12px",
-                  marginBottom: "3px",
-                  fontWeight: row.is_candidate ? "bold" : "normal",
-                }}
-              >
-                <span
-                  style={{
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  #{row.rank} {row.is_candidate ? "Your location" : row.name}
-                </span>
-
-                <span>{formatNumber(row.trips_per_dock)}</span>
-              </div>
-
-              <div
-                style={{
-                  height: "8px",
-                  background: "#e5e5e5",
-                  borderRadius: "999px",
-                  overflow: "hidden",
-                }}
-              >
-                <div
-                  style={{
-                    height: "100%",
-                    width: `${widthPercent}%`,
-                    background: row.is_candidate ? "#007bba" : "#b8c4cc",
-                    borderRadius: "999px",
-                  }}
-                />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function NearbyAttributes({ featureResults }) {
-  if (!featureResults) return null;
-
-  return (
-    <div
-      style={{
-        marginBottom: "14px",
-        padding: "10px",
-        background: "#fafafa",
-        borderRadius: "10px",
-      }}
-    >
-      <h4 style={{ marginBottom: "8px", color: "#007bba" }}>
-        Nearby Attributes
-      </h4>
-
-      <div>
-        <b>Transit Stops, 275m:</b> {featureResults.count_transit_stop_275m}
-      </div>
-
-      <div>
-        <b>Amenities, 275m:</b> {featureResults.count_amenities_275m}
-      </div>
-
-      <div>
-        <b>Jobs, 275m:</b> {featureResults.jobs_count_within_275m}
-      </div>
-
-      <div style={{ marginTop: "8px" }}>
-        <b>Nearest Station:</b>{" "}
-        {formatNumber(featureResults.nearest_bikeshare_station_m)} m
-      </div>
-
-      <div>
-        <b>Population Density:</b>{" "}
-        {formatDecimal(featureResults.population_density, 4)}
-      </div>
-    </div>
-  );
-}
-
-function FeatureSummary({ topSummary }) {
-  if (!topSummary?.length) return null;
-
-  return (
-    <div style={{ marginTop: "16px" }}>
-      <h4 style={{ marginBottom: "8px", color: "#007bba" }}>
-        Why this score?
-      </h4>
-
-      {topSummary.slice(0, 5).map((row) => {
-        const helpsPrediction = row.shap_value >= 0;
-
-        return (
-          <div
-            key={row.feature}
-            style={{
-              marginBottom: "8px",
-              padding: "8px",
-              borderRadius: "8px",
-              background: "#f4f7f9",
-              borderLeft: `4px solid ${helpsPrediction ? "#007bba" : "#999"}`,
-            }}
-          >
-            <div>
-              <b>{row.feature}</b>
-            </div>
-
-            <div>{helpsPrediction ? "Increases" : "Decreases"} prediction</div>
-
-            <div style={{ fontSize: "12px", color: "#555" }}>
-              Percentile: {Math.round(row.percentile_rank)} ·{" "}
-              {row.relative_to_median}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function ResultsPanel({
-  featureResults,
-  prediction,
-  stationComparison,
-  topSummary,
-}) {
-  if (!featureResults) return null;
-
-  return (
-    <div
-      style={{
-        position: "absolute",
-        bottom: "20px",
-        left: "20px",
-        zIndex: 1100,
-        background: "white",
-        padding: "16px",
-        borderRadius: "14px",
-        boxShadow: "0 6px 18px rgba(0,0,0,0.18)",
-        width: "370px",
-        maxHeight: "78vh",
-        overflowY: "auto",
-        fontSize: "14px",
-        animation: "fadeUp 0.35s ease both",
-      }}
-    >
-      <h3 style={{ marginBottom: "10px", color: "#007bba" }}>
-        Location Insights
-      </h3>
-
-      {prediction !== null && prediction !== undefined && (
-        <div
-          style={{
-            fontSize: "24px",
-            fontWeight: "bold",
-            color: "#007bba",
-            marginBottom: "12px",
-            lineHeight: "1.15",
-          }}
-        >
-          Predicted Trips per Dock: {formatNumber(prediction)}
-        </div>
-      )}
-
-      <StationComparisonSummary stationComparison={stationComparison} />
-      <StationRankingList stationComparison={stationComparison} />
-      <NearbyAttributes featureResults={featureResults} />
-      <FeatureSummary topSummary={topSummary} />
     </div>
   );
 }
@@ -494,6 +372,15 @@ export default function App() {
   const [stationComparison, setStationComparison] = useState(null);
 
   const [isLoading, setIsLoading] = useState(false);
+  const [hasScoredStation, setHasScoredStation] = useState(false);
+  const [resultsCollapsed, setResultsCollapsed] = useState(false);
+  const [shouldAutoPanResults, setShouldAutoPanResults] = useState(false);
+
+  const [showBoundaryWarning, setShowBoundaryWarning] = useState(false);
+  const [boundaryWarningKey, setBoundaryWarningKey] = useState(0);
+
+  const boundaryWarningTimeoutRef = useRef(null);
+  const ignoreMapInteractionRef = useRef(false);
 
   useEffect(() => {
     fetch("/travis_county.geojson")
@@ -539,6 +426,14 @@ export default function App() {
     };
   }, [animateMapEntry]);
 
+  useEffect(() => {
+    return () => {
+      if (boundaryWarningTimeoutRef.current) {
+        window.clearTimeout(boundaryWarningTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const countyRings = useMemo(() => {
     return getCountyOuterRings(countyGeoJson);
   }, [countyGeoJson]);
@@ -574,15 +469,66 @@ export default function App() {
     setTopSummary([]);
     setStationComparison(null);
     setIsLoading(false);
+    setHasScoredStation(false);
+    setResultsCollapsed(false);
+    setShouldAutoPanResults(false);
+    setShowBoundaryWarning(false);
+    ignoreMapInteractionRef.current = false;
+  }
+
+  function triggerBoundaryWarning() {
+    if (boundaryWarningTimeoutRef.current) {
+      window.clearTimeout(boundaryWarningTimeoutRef.current);
+    }
+
+    setBoundaryWarningKey((prev) => prev + 1);
+    setShowBoundaryWarning(true);
+
+    boundaryWarningTimeoutRef.current = window.setTimeout(() => {
+      setShowBoundaryWarning(false);
+    }, 2550);
   }
 
   function handlePointSelect(point) {
+    const isInsideCounty = geoJsonContainsPoint(countyGeoJson, [
+      point.lon,
+      point.lat,
+    ]);
+
+    if (!isInsideCounty) {
+      if (!selectedPoint) {
+        triggerBoundaryWarning();
+      }
+
+      return;
+    }
+
+    setShowBoundaryWarning(false);
+
     setSelectedPoint(point);
+    setHasScoredStation(false);
+    setResultsCollapsed(false);
+    setShouldAutoPanResults(false);
+    ignoreMapInteractionRef.current = false;
 
     setFeatureResults(null);
     setPrediction(null);
     setTopSummary([]);
     setStationComparison(null);
+  }
+
+  function handleTryAnother() {
+    setSelectedPoint(null);
+    setFeatureResults(null);
+    setPrediction(null);
+    setTopSummary([]);
+    setStationComparison(null);
+    setHasScoredStation(false);
+    setResultsCollapsed(false);
+    setIsLoading(false);
+    setShouldAutoPanResults(false);
+    setShowBoundaryWarning(false);
+    ignoreMapInteractionRef.current = false;
   }
 
   async function getFeatures() {
@@ -591,7 +537,11 @@ export default function App() {
       return;
     }
 
+    setHasScoredStation(true);
+    setResultsCollapsed(false);
+    setShouldAutoPanResults(false);
     setIsLoading(true);
+    ignoreMapInteractionRef.current = false;
 
     try {
       const response = await fetch(API_URL, {
@@ -619,6 +569,8 @@ export default function App() {
       setPrediction(data.predicted_trips_per_dock);
       setTopSummary(data.top_feature_summary || []);
       setStationComparison(data.station_comparison);
+      setResultsCollapsed(false);
+      setShouldAutoPanResults(true);
     } catch (error) {
       console.error("Fetch failed:", error);
       alert("Could not reach backend. Check the browser console.");
@@ -637,19 +589,28 @@ export default function App() {
                 animateMapEntry ? "is-entering" : ""
               }`}
             >
-              <ScoreButton
+              <SelectedPointCard
                 selectedPoint={selectedPoint}
-                isLoading={isLoading}
-                onScore={getFeatures}
+                hasScoredStation={hasScoredStation}
               />
 
-              <SelectedPointCard selectedPoint={selectedPoint} />
+              {isLoading && <ScoringOverlay />}
 
-              <ResultsPanel
+              <StationResults
                 featureResults={featureResults}
                 prediction={prediction}
                 stationComparison={stationComparison}
                 topSummary={topSummary}
+                isCollapsed={resultsCollapsed}
+                onExpand={() => {
+                  ignoreMapInteractionRef.current = true;
+                  setResultsCollapsed(false);
+
+                  window.setTimeout(() => {
+                    ignoreMapInteractionRef.current = false;
+                  }, 400);
+                }}
+                onTryAnother={handleTryAnother}
               />
 
               <MapContainer
@@ -695,6 +656,39 @@ export default function App() {
                   />
                 )}
 
+                <ContextLayers
+                  selectedPoint={selectedPoint}
+                  showLayers={Boolean(featureResults) && !isLoading}
+                  radiusMeters={200}
+                />
+
+                <MapInteractionWatcher
+                  enabled={Boolean(featureResults) && !resultsCollapsed}
+                  shouldIgnoreInteraction={() => ignoreMapInteractionRef.current}
+                  onInteract={() => setResultsCollapsed(true)}
+                />
+
+                <PanSelectedPointIntoView
+                  selectedPoint={selectedPoint}
+                  enabled={
+                    shouldAutoPanResults &&
+                    Boolean(featureResults) &&
+                    !isLoading &&
+                    !resultsCollapsed
+                  }
+                  verticalPosition={0.25}
+                  onAutoPanStart={() => {
+                    ignoreMapInteractionRef.current = true;
+                  }}
+                  onAutoPanEnd={() => {
+                    setShouldAutoPanResults(false);
+
+                    window.setTimeout(() => {
+                      ignoreMapInteractionRef.current = false;
+                    }, 150);
+                  }}
+                />
+
                 <ClickPoint
                   selectedPoint={selectedPoint}
                   onPointSelect={handlePointSelect}
@@ -704,6 +698,13 @@ export default function App() {
           </div>
 
           <HintsButton className="map-screen-hints" />
+
+          <ScoreButton
+            selectedPoint={selectedPoint}
+            isLoading={isLoading}
+            hasScoredStation={hasScoredStation}
+            onScore={getFeatures}
+          />
         </div>
       )}
 
@@ -712,6 +713,12 @@ export default function App() {
           onPlayStart={handlePlayStart}
           onTransitionComplete={() => setShowStartScreen(false)}
         />
+      )}
+
+      {showBoundaryWarning && !selectedPoint && (
+        <div key={boundaryWarningKey} className="boundary-warning-toast">
+          Please select a point within Travis County
+        </div>
       )}
     </div>
   );
