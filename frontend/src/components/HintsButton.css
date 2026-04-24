@@ -250,3 +250,46 @@
     transform: translateY(0) scale(1);
   }
 }
+
+@media (max-width: 700px) {
+  .start-screen .game-hint-button.start-screen-hints {
+    position: fixed;
+    top: 18px;
+    left: 18px;
+    bottom: auto;
+    z-index: 6000;
+
+    padding: 9px 13px;
+    font-size: 0.84rem;
+    border-radius: 999px;
+
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.1);
+  }
+
+  .game-hint-overlay {
+    align-items: flex-start;
+    padding: 18px;
+    overflow-y: auto;
+  }
+
+  .game-hint-modal {
+    margin-top: 54px;
+    width: 100%;
+    min-height: auto;
+    max-height: calc(100svh - 90px);
+    overflow-y: auto;
+    border-radius: 22px;
+    padding: 26px 22px;
+  }
+
+  .game-hint-modal h2 {
+    font-size: 1.55rem;
+  }
+
+  .game-hint-intro,
+  .game-hint-list li {
+    font-size: 0.92rem;
+  }
+}
