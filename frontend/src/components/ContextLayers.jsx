@@ -10,28 +10,28 @@ const LAYER_CONFIGS = [
     label: "Transit Stop",
     url: "/map_layers/transit_stops.csv",
     color: "#7c3aed",
-    size: 9,
+    size: 13,
   },
   {
     id: "amenities",
     label: "Amenity",
     url: "/map_layers/amenities.csv",
     color: "#16a34a",
-    size: 9,
+    size: 13,
   },
   {
     id: "jobs",
     label: "Jobs",
     url: "/map_layers/jobs.csv",
     color: "#f97316",
-    size: 7,
+    size: 10,
   },
   {
     id: "bikeshare",
     label: "Existing Bikeshare Station",
     url: "/map_layers/existing_stations.csv",
     color: "#007bba",
-    size: 12,
+    size: 15,
   },
 ];
 
@@ -136,8 +136,8 @@ function createContextPointIcon(point, delayMs) {
         "
       ></span>
     `,
-    iconSize: [point.size + 16, point.size + 16],
-    iconAnchor: [(point.size + 16) / 2, (point.size + 16) / 2],
+    iconSize: [point.size + 18, point.size + 18],
+    iconAnchor: [(point.size + 18) / 2, (point.size + 18) / 2],
   });
 }
 
@@ -182,10 +182,35 @@ function TooltipContent({ point }) {
   );
 }
 
+function AnimatedContextMarker({ point, selectedPointId }) {
+  const icon = useMemo(() => {
+    return createContextPointIcon(point, point.animationDelayMs);
+  }, [
+    point.id,
+    point.color,
+    point.size,
+    point.layerId,
+    point.animationDelayMs,
+  ]);
+
+  return (
+    <Marker
+      key={`${selectedPointId}-${point.id}`}
+      position={[point.lat, point.lon]}
+      icon={icon}
+      interactive
+    >
+      <Tooltip direction="top" offset={[0, -8]}>
+        <TooltipContent point={point} />
+      </Tooltip>
+    </Marker>
+  );
+}
+
 export default function ContextLayers({
   selectedPoint,
   showLayers,
-  radiusMeters = 2000,
+  radiusMeters = 200,
 }) {
   const [pointsByLayer, setPointsByLayer] = useState({});
 
@@ -248,25 +273,27 @@ export default function ContextLayers({
       .sort((a, b) => a.distanceMeters - b.distanceMeters)
       .map((point, index) => ({
         ...point,
-        animationDelayMs: Math.min(index * 28, 1200),
+        animationDelayMs: Math.min(index * 34, 1600),
       }));
-  }, [pointsByLayer, selectedPoint, showLayers, radiusMeters]);
+  }, [
+    pointsByLayer,
+    selectedPoint?.id,
+    selectedPoint?.lat,
+    selectedPoint?.lon,
+    showLayers,
+    radiusMeters,
+  ]);
 
   if (!selectedPoint || !showLayers) return null;
 
   return (
     <>
       {nearbyPoints.map((point) => (
-        <Marker
-          key={`${point.id}-${selectedPoint.id}`}
-          position={[point.lat, point.lon]}
-          icon={createContextPointIcon(point, point.animationDelayMs)}
-          interactive
-        >
-          <Tooltip direction="top" offset={[0, -8]}>
-            <TooltipContent point={point} />
-          </Tooltip>
-        </Marker>
+        <AnimatedContextMarker
+          key={`${selectedPoint.id}-${point.id}`}
+          point={point}
+          selectedPointId={selectedPoint.id}
+        />
       ))}
     </>
   );

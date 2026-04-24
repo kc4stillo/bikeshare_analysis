@@ -41,9 +41,7 @@ const COUNTY_MASK_STEPS = [
 // GeoJSON helpers
 // -----------------------------
 function getCountyOuterRings(geojson) {
-  if (!geojson?.features?.length) {
-    return [];
-  }
+  if (!geojson?.features?.length) return [];
 
   const geometry = geojson.features[0].geometry;
 
@@ -86,9 +84,7 @@ function getRingsCenter(rings) {
 }
 
 function scaleCountyRings(rings, scale, center) {
-  if (scale === 1) {
-    return rings;
-  }
+  if (scale === 1) return rings;
 
   return rings.map((ring) =>
     ring.map(([lat, lng]) => [
@@ -109,9 +105,7 @@ function isPointInRing(point, ring) {
     const intersects =
       yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
 
-    if (intersects) {
-      inside = !inside;
-    }
+    if (intersects) inside = !inside;
   }
 
   return inside;
@@ -120,14 +114,10 @@ function isPointInRing(point, ring) {
 function isPointInPolygonCoords(point, polygonCoords) {
   if (!polygonCoords?.length) return false;
 
-  if (!isPointInRing(point, polygonCoords[0])) {
-    return false;
-  }
+  if (!isPointInRing(point, polygonCoords[0])) return false;
 
   for (let i = 1; i < polygonCoords.length; i++) {
-    if (isPointInRing(point, polygonCoords[i])) {
-      return false;
-    }
+    if (isPointInRing(point, polygonCoords[i])) return false;
   }
 
   return true;
@@ -239,7 +229,9 @@ function MapInteractionWatcher({ enabled, shouldIgnoreInteraction, onInteract })
 function PanSelectedPointIntoView({
   selectedPoint,
   enabled,
-  verticalPosition = 0.25,
+  verticalPosition = 0.06,
+  zoomBoost = 1,
+  maxZoom = 15,
   onAutoPanStart,
   onAutoPanEnd,
 }) {
@@ -259,12 +251,13 @@ function PanSelectedPointIntoView({
     const timeout = window.setTimeout(() => {
       onAutoPanStartRef.current?.();
 
-      const zoom = map.getZoom();
+      const currentZoom = map.getZoom();
+      const targetZoom = Math.min(currentZoom + zoomBoost, maxZoom);
       const size = map.getSize();
 
       const selectedProjectedPoint = map.project(
         [selectedPoint.lat, selectedPoint.lon],
-        zoom
+        targetZoom
       );
 
       const mapCenterPixel = L.point(size.x / 2, size.y / 2);
@@ -274,7 +267,7 @@ function PanSelectedPointIntoView({
         .add(mapCenterPixel)
         .subtract(desiredPointPixel);
 
-      const newCenterLatLng = map.unproject(newCenterProjectedPoint, zoom);
+      const newCenterLatLng = map.unproject(newCenterProjectedPoint, targetZoom);
 
       let hasEnded = false;
 
@@ -286,19 +279,19 @@ function PanSelectedPointIntoView({
 
       map.once("moveend", endAutoPan);
 
-      map.flyTo(newCenterLatLng, zoom, {
+      map.flyTo(newCenterLatLng, targetZoom, {
         animate: true,
-        duration: 0.85,
+        duration: 0.9,
         easeLinearity: 0.25,
       });
 
-      window.setTimeout(endAutoPan, 1250);
-    }, 220);
+      window.setTimeout(endAutoPan, 1400);
+    }, 240);
 
     return () => {
       window.clearTimeout(timeout);
     };
-  }, [enabled, selectedPoint, verticalPosition, map]);
+  }, [enabled, selectedPoint, verticalPosition, zoomBoost, maxZoom, map]);
 
   return null;
 }
@@ -677,6 +670,8 @@ export default function App() {
                     !resultsCollapsed
                   }
                   verticalPosition={0.25}
+                  zoomBoost={1}
+                  maxZoom={15}
                   onAutoPanStart={() => {
                     ignoreMapInteractionRef.current = true;
                   }}

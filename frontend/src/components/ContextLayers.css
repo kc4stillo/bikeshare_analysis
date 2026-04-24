@@ -13,20 +13,20 @@
   border-radius: 999px;
 
   background: var(--context-color);
-  border: 2px solid rgba(255, 255, 255, 0.95);
+  border: 2px solid rgba(255, 255, 255, 0.96);
 
   box-shadow:
-    0 6px 16px rgba(0, 0, 0, 0.18),
-    0 0 0 0 color-mix(in srgb, var(--context-color) 32%, transparent);
+    0 7px 18px rgba(0, 0, 0, 0.2),
+    0 0 0 3px color-mix(in srgb, var(--context-color) 18%, transparent);
 
   opacity: 0;
   transform: translate(-50%, -50%) translateY(18px) scale(0.35);
 
-  animation:
-    contextPointHop 0.58s cubic-bezier(0.2, 1.4, 0.32, 1) var(--context-delay)
-      forwards,
-    contextPointIdle 2.8s ease-in-out calc(var(--context-delay) + 0.7s)
-      infinite;
+    animation:
+    contextPointHop 0.9s cubic-bezier(0.2, 1.25, 0.32, 1) var(--context-delay)
+        forwards,
+    contextPointIdle 3.2s ease-in-out calc(var(--context-delay) + 1s)
+        infinite;
 }
 
 .context-point-bikeshare {
@@ -34,7 +34,7 @@
 }
 
 .context-point-jobs {
-  opacity: 0;
+  border-width: 1.75px;
 }
 
 @keyframes contextPointHop {
@@ -45,7 +45,7 @@
 
   55% {
     opacity: 1;
-    transform: translate(-50%, -50%) translateY(-9px) scale(1.18);
+    transform: translate(-50%, -50%) translateY(-10px) scale(1.18);
   }
 
   78% {
