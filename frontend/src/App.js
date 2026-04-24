@@ -1,4 +1,5 @@
 import "leaflet/dist/leaflet.css";
+
 import L from "leaflet";
 import {
   MapContainer,
@@ -11,6 +12,7 @@ import {
   useMapEvents,
 } from "react-leaflet";
 import { useEffect, useMemo, useRef, useState } from "react";
+
 import StartScreen from "./components/StartScreen";
 import HintsButton from "./components/HintsButton";
 import ContextLayers from "./components/ContextLayers";
@@ -113,7 +115,6 @@ function isPointInRing(point, ring) {
 
 function isPointInPolygonCoords(point, polygonCoords) {
   if (!polygonCoords?.length) return false;
-
   if (!isPointInRing(point, polygonCoords[0])) return false;
 
   for (let i = 1; i < polygonCoords.length; i++) {
@@ -214,7 +215,6 @@ function MapInteractionWatcher({ enabled, shouldIgnoreInteraction, onInteract })
   function handleMapInteraction() {
     if (!enabled) return;
     if (shouldIgnoreInteraction?.()) return;
-
     onInteract();
   }
 
@@ -229,7 +229,7 @@ function MapInteractionWatcher({ enabled, shouldIgnoreInteraction, onInteract })
 function PanSelectedPointIntoView({
   selectedPoint,
   enabled,
-  verticalPosition = 0.06,
+  verticalPosition = 0.25,
   zoomBoost = 1,
   maxZoom = 15,
   onAutoPanStart,
@@ -299,17 +299,13 @@ function PanSelectedPointIntoView({
 // -----------------------------
 // Floating controls
 // -----------------------------
-function ScoreButton({
-  selectedPoint,
-  isLoading,
-  hasScoredStation,
-  onScore,
-}) {
+function ScoreButton({ selectedPoint, isLoading, hasScoredStation, onScore }) {
   if (!selectedPoint || hasScoredStation) return null;
 
   return (
     <button
       className={`score-location-button ${isLoading ? "is-loading" : ""}`}
+      type="button"
       onClick={onScore}
       disabled={isLoading}
     >
@@ -322,20 +318,7 @@ function SelectedPointCard({ selectedPoint, hasScoredStation }) {
   if (!selectedPoint || hasScoredStation) return null;
 
   return (
-    <div
-      style={{
-        position: "absolute",
-        top: "20px",
-        right: "20px",
-        zIndex: 1100,
-        background: "white",
-        padding: "11px 14px",
-        borderRadius: "12px",
-        boxShadow: "0 4px 14px rgba(0,0,0,0.14)",
-        fontSize: "13px",
-        lineHeight: "1.5",
-      }}
-    >
+    <div className="selected-point-card">
       <div>
         <b>Lat:</b> {selectedPoint.lat}
       </div>
@@ -358,7 +341,6 @@ export default function App() {
 
   const [countyGeoJson, setCountyGeoJson] = useState(null);
   const [selectedPoint, setSelectedPoint] = useState(null);
-
   const [featureResults, setFeatureResults] = useState(null);
   const [prediction, setPrediction] = useState(null);
   const [topSummary, setTopSummary] = useState([]);
@@ -381,7 +363,6 @@ export default function App() {
         if (!res.ok) {
           throw new Error(`GeoJSON load failed: ${res.status}`);
         }
-
         return res.json();
       })
       .then((data) => {
@@ -455,7 +436,6 @@ export default function App() {
     setGameStarted(false);
     setShowStartScreen(true);
     setAnimateMapEntry(false);
-
     setSelectedPoint(null);
     setFeatureResults(null);
     setPrediction(null);
@@ -492,18 +472,15 @@ export default function App() {
       if (!selectedPoint) {
         triggerBoundaryWarning();
       }
-
       return;
     }
 
     setShowBoundaryWarning(false);
-
     setSelectedPoint(point);
     setHasScoredStation(false);
     setResultsCollapsed(false);
     setShouldAutoPanResults(false);
     ignoreMapInteractionRef.current = false;
-
     setFeatureResults(null);
     setPrediction(null);
     setTopSummary([]);
@@ -549,7 +526,6 @@ export default function App() {
       });
 
       const data = await response.json();
-
       console.log("Prediction response:", data);
 
       if (!data.success) {
@@ -607,6 +583,7 @@ export default function App() {
               />
 
               <MapContainer
+                className="station-map"
                 center={AUSTIN_CENTER}
                 zoom={INITIAL_ZOOM}
                 zoomControl={false}
@@ -662,27 +639,27 @@ export default function App() {
                 />
 
                 <PanSelectedPointIntoView
-                  selectedPoint={selectedPoint}
-                  enabled={
-                    shouldAutoPanResults &&
-                    Boolean(featureResults) &&
-                    !isLoading &&
-                    !resultsCollapsed
-                  }
-                  verticalPosition={0.25}
-                  zoomBoost={1}
-                  maxZoom={15}
-                  onAutoPanStart={() => {
-                    ignoreMapInteractionRef.current = true;
-                  }}
-                  onAutoPanEnd={() => {
-                    setShouldAutoPanResults(false);
+  selectedPoint={selectedPoint}
+  enabled={
+    shouldAutoPanResults &&
+    Boolean(featureResults) &&
+    !isLoading &&
+    !resultsCollapsed
+  }
+  verticalPosition={0.26}
+  zoomBoost={3}
+  maxZoom={17}
+  onAutoPanStart={() => {
+    ignoreMapInteractionRef.current = true;
+  }}
+  onAutoPanEnd={() => {
+    setShouldAutoPanResults(false);
 
-                    window.setTimeout(() => {
-                      ignoreMapInteractionRef.current = false;
-                    }, 150);
-                  }}
-                />
+    window.setTimeout(() => {
+      ignoreMapInteractionRef.current = false;
+    }, 150);
+  }}
+/>
 
                 <ClickPoint
                   selectedPoint={selectedPoint}

@@ -1,136 +1,119 @@
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  overflow: hidden;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
 * {
   box-sizing: border-box;
 }
 
-html,
-body,
-#root {
-  margin: 0;
-  min-height: 100%;
-  width: 100%;
-}
-
-body {
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", sans-serif;
-  background: #f6f7f8;
-  color: #111111;
-  overflow: hidden;
-}
-
-button,
-input,
-textarea,
-select {
-  font: inherit;
-}
-
 .app-shell {
-  height: 100vh;
-  width: 100%;
   position: relative;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
-  background: #f6f7f8;
 }
-
-/* ----------------------------- */
-/* Map page layout */
-/* ----------------------------- */
 
 .map-screen {
   position: relative;
-  height: 100vh;
-  width: 100vw;
-  box-sizing: border-box;
-  background: #f6f7f8;
-  padding: 24px 24px 72px 24px;
-  display: flex;
-  align-items: stretch;
-  justify-content: center;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #eef5f8;
 }
 
 .map-frame {
-  position: relative;
-  width: min(1280px, 100%);
-  height: 100%;
-  border-radius: 34px;
+  position: absolute;
+  inset: 0;
   overflow: hidden;
-  background: #ffffff;
-  box-shadow:
-    0 14px 42px rgba(0, 0, 0, 0.1),
-    0 34px 96px rgba(0, 0, 0, 0.14);
 }
 
 .map-reveal-window {
   position: relative;
-  height: 100%;
   width: 100%;
+  height: 100%;
   overflow: hidden;
-  border-radius: inherit;
-  background: #ffffff;
-  clip-path: inset(0 round 34px);
-}
-
-.map-reveal-window .leaflet-container {
-  width: 100%;
-  height: 100%;
-  border-radius: inherit;
-  background: #f4f4f4;
 }
 
 .map-reveal-window.is-entering {
-  animation:
-    mapWindowReveal 2.35s cubic-bezier(0.16, 1, 0.3, 1) 0.9s both,
-    mapWindowSettle 2.35s cubic-bezier(0.22, 1, 0.36, 1) 0.9s both;
-  transform-origin: center center;
+  animation: mapRevealIn 0.75s ease both;
 }
 
-/* ----------------------------- */
-/* Map controls */
-/* ----------------------------- */
-
-.game-hint-button.map-screen-hints {
-  position: fixed !important;
-  left: 24px !important;
-  bottom: 22px !important;
-  z-index: 1300 !important;
-  transform: none !important;
-  opacity: 0;
-  animation: fadeUp 0.65s ease both;
-  animation-delay: 1.9s;
+.station-map {
+  width: 100%;
+  height: 100%;
 }
 
+/* Selected candidate dot pulse */
+.pulse-ring {
+  animation: pulseStation 0.75s ease-out;
+  transform-origin: center;
+}
+
+@keyframes pulseStation {
+  0% {
+    stroke-opacity: 0.95;
+    fill-opacity: 0.45;
+    stroke-width: 3;
+  }
+
+  100% {
+    stroke-opacity: 0;
+    fill-opacity: 0;
+    stroke-width: 0;
+  }
+}
+
+/* Top/right coordinate card */
+.selected-point-card {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 1550;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(16px);
+  padding: 11px 14px;
+  border-radius: 14px;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.14);
+  font-size: 13px;
+  line-height: 1.5;
+  color: #111111;
+}
+
+/* Main score button */
 .score-location-button {
-  position: fixed !important;
-  left: 50% !important;
-  bottom: 196px !important;
-  z-index: 2400 !important;
-
-  transform: translateX(-50%) translateY(42px) scale(0.92);
-
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  z-index: 1700;
+  transform: translateX(-50%);
   border: none;
   border-radius: 999px;
-  padding: 15px 30px;
-
   background: #007bba;
   color: #ffffff;
-
-  font-size: 0.98rem;
-  font-weight: 800;
+  padding: 15px 24px;
+  min-width: 210px;
+  font-size: 1rem;
+  font-weight: 850;
   letter-spacing: 0.01em;
-  white-space: nowrap;
   cursor: pointer;
-
-  overflow: hidden;
-  isolation: isolate;
-
-  box-shadow:
-    0 14px 34px rgba(0, 123, 186, 0.28),
-    0 0 0 1px rgba(255, 255, 255, 0.16),
-    inset 0 1px 0 rgba(255, 255, 255, 0.16);
-
-  animation: scoreButtonEnter 0.52s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-
+  box-shadow: 0 16px 38px rgba(0, 123, 186, 0.32);
   transition:
     transform 0.18s ease,
     background 0.18s ease,
@@ -138,362 +121,246 @@ select {
     opacity 0.18s ease;
 }
 
-.score-location-button::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    transparent 24%,
-    rgba(255, 255, 255, 0.12) 38%,
-    rgba(255, 255, 255, 0.48) 50%,
-    rgba(255, 255, 255, 0.12) 62%,
-    transparent 76%,
-    transparent 100%
-  );
-
-  transform: translateX(-115%);
-  animation: scoreButtonBlueSweep 2.8s ease-in-out infinite;
-}
-
-.score-location-button::after {
-  content: "";
-  position: absolute;
-  inset: 1px;
-  border-radius: inherit;
-  z-index: -2;
-  background: linear-gradient(180deg, #0085c8 0%, #0070aa 100%);
-}
-
 .score-location-button:hover {
+  transform: translateX(-50%) translateY(-2px);
   background: #008bd2;
-  box-shadow:
-    0 16px 38px rgba(0, 123, 186, 0.36),
-    0 0 0 1px rgba(255, 255, 255, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  box-shadow: 0 20px 46px rgba(0, 123, 186, 0.38);
 }
 
-.score-location-button:hover::before {
-  animation-duration: 1.8s;
-}
-
-.score-location-button:active {
-  transform: translateX(-50%) translateY(0) scale(0.98);
-}
-
+.score-location-button:disabled,
 .score-location-button.is-loading {
   cursor: wait;
-  background: #007bba;
-  opacity: 0.95;
+  opacity: 0.78;
 }
 
-.score-location-button.is-loading::before {
-  animation-duration: 1.15s;
+/* Hint button location on map screen */
+.map-screen-hints {
+  position: absolute !important;
+  top: 18px;
+  left: 20px;
+  z-index: 1700;
 }
 
-/* ----------------------------- */
-/* Warning toast */
-/* ----------------------------- */
-
+/* Boundary warning */
 .boundary-warning-toast {
   position: fixed;
   left: 50%;
-  bottom: 136px;
-  z-index: 9000;
-
-  transform: translateX(-50%) translateY(42px) scale(0.92);
-
-  padding: 14px 22px;
+  top: 22px;
+  z-index: 7000;
+  transform: translateX(-50%);
+  max-width: calc(100vw - 32px);
   border-radius: 999px;
-
-  background: linear-gradient(180deg, #ff5c5c 0%, #e13a3a 100%);
+  background: #111111;
   color: #ffffff;
-
+  padding: 12px 18px;
   font-size: 0.95rem;
   font-weight: 750;
-  letter-spacing: 0.01em;
-  text-align: center;
-  white-space: nowrap;
-
-  border: 1px solid rgba(255, 255, 255, 0.22);
-
-  box-shadow:
-    0 14px 32px rgba(225, 58, 58, 0.35),
-    0 0 28px rgba(255, 89, 89, 0.38),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
-
-  pointer-events: none;
-
-  animation:
-    boundaryToastEnter 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards,
-    boundaryToastShake 0.42s ease-in-out 0.18s 2,
-    boundaryToastExit 0.55s cubic-bezier(0.7, 0, 0.84, 0) 1.85s forwards;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24);
+  animation: toastIn 0.28s ease both;
 }
 
-/* ----------------------------- */
-/* Leaflet polish */
-/* ----------------------------- */
+/* Mobile-first cleanup for map overlays */
+@media (max-width: 700px) {
+  .map-screen {
+    min-height: 100svh;
+  }
 
-.leaflet-container {
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", sans-serif;
+  .map-screen-hints {
+    top: 12px;
+    left: 12px;
+    transform: scale(0.94);
+    transform-origin: left top;
+  }
+
+  .selected-point-card {
+    top: 12px;
+    right: 12px;
+    max-width: calc(100vw - 150px);
+    padding: 8px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    line-height: 1.35;
+  }
+
+  .score-location-button {
+    left: 12px;
+    right: 12px;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    width: auto;
+    min-width: 0;
+    transform: none;
+    padding: 15px 16px;
+    font-size: 1rem;
+    box-shadow: 0 14px 34px rgba(0, 123, 186, 0.34);
+  }
+
+  .score-location-button:hover {
+    transform: translateY(-2px);
+  }
+
+  .boundary-warning-toast {
+    top: 14px;
+    width: calc(100vw - 24px);
+    border-radius: 18px;
+    text-align: center;
+    font-size: 0.9rem;
+  }
+
+  /*
+    StationResults.css owns the base result card.
+    These overrides turn it into a mobile bottom sheet.
+  */
+  .station-results-panel {
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    max-width: none !important;
+    max-height: 56svh !important;
+    transform: none !important;
+    border-radius: 22px 22px 0 0 !important;
+    padding: 16px 14px calc(88px + env(safe-area-inset-bottom, 0px)) !important;
+    scrollbar-width: thin !important;
+  }
+
+  .station-results-panel::-webkit-scrollbar {
+    display: block !important;
+    width: 4px;
+  }
+
+  .station-results-panel::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.22);
+    border-radius: 999px;
+  }
+
+  .results-eyebrow {
+    margin-bottom: 8px !important;
+    font-size: 0.68rem !important;
+  }
+
+  .score-hero {
+    gap: 10px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .score-number {
+    font-size: 2.65rem !important;
+    letter-spacing: -0.06em !important;
+  }
+
+  .score-label {
+    font-size: 0.8rem !important;
+  }
+
+  .score-rank-card {
+    min-width: 82px !important;
+    padding: 10px 11px !important;
+    border-radius: 15px !important;
+  }
+
+  .snapshot-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .snapshot-card {
+    padding: 11px !important;
+    border-radius: 15px !important;
+  }
+
+  .snapshot-card strong {
+    font-size: 1.1rem !important;
+  }
+
+  .snapshot-card span {
+    font-size: 0.72rem !important;
+  }
+
+  .impact-row {
+    padding: 10px !important;
+    gap: 10px !important;
+  }
+
+  .impact-name {
+    font-size: 0.82rem !important;
+  }
+
+  .impact-meta {
+    font-size: 0.7rem !important;
+  }
+
+  .impact-pill {
+    padding: 6px 8px !important;
+    font-size: 0.68rem !important;
+  }
+
+  .leaderboard-list {
+    max-height: 160px !important;
+  }
+
+  .results-compact-actions {
+    left: 12px !important;
+    right: 12px !important;
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px)) !important;
+    width: auto !important;
+    transform: none !important;
+    z-index: 1650 !important;
+  }
+
+  .compact-results-button {
+    flex: 1 !important;
+    padding: 13px 10px !important;
+    font-size: 0.86rem !important;
+  }
+
+  .scoring-card {
+    width: calc(100vw - 32px) !important;
+    padding: 24px 20px !important;
+    border-radius: 24px !important;
+  }
+
+  .leaflet-control-attribution {
+    font-size: 9px !important;
+    max-width: 70vw;
+  }
 }
 
-.leaflet-control-zoom {
-  display: none !important;
+@media (max-width: 390px) {
+  .station-results-panel {
+    max-height: 58svh !important;
+  }
+
+  .score-number {
+    font-size: 2.35rem !important;
+  }
+
+  .selected-point-card {
+    max-width: calc(100vw - 132px);
+    font-size: 10.5px;
+  }
 }
 
-.leaflet-control-attribution {
-  font-size: 10px;
-  border-top-left-radius: 8px;
-}
-
-/* ----------------------------- */
-/* Shared animations */
-/* ----------------------------- */
-
-@keyframes fadeUp {
+@keyframes mapRevealIn {
   from {
     opacity: 0;
-    transform: translateY(14px);
+    transform: scale(1.015);
   }
 
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: scale(1);
   }
 }
 
-.pulse-ring {
-  animation: pulse 1.5s ease-out infinite;
-}
-
-@keyframes pulse {
-  0% {
-    stroke-opacity: 0.9;
-    fill-opacity: 0.25;
-  }
-
-  100% {
-    stroke-opacity: 0;
-    fill-opacity: 0;
-  }
-}
-
-@keyframes mapWindowReveal {
-  0% {
-    clip-path: circle(0% at 50% 50%);
+@keyframes toastIn {
+  from {
     opacity: 0;
+    transform: translateX(-50%) translateY(-10px);
   }
 
-  18% {
-    clip-path: circle(14% at 50% 50%);
-    opacity: 0.62;
-  }
-
-  42% {
-    clip-path: circle(42% at 50% 50%);
-    opacity: 0.88;
-  }
-
-  72% {
-    clip-path: circle(86% at 50% 50%);
+  to {
     opacity: 1;
-  }
-
-  99% {
-    clip-path: circle(142% at 50% 50%);
-    opacity: 1;
-  }
-
-  100% {
-    clip-path: inset(0 round 34px);
-    opacity: 1;
-  }
-}
-
-@keyframes mapWindowSettle {
-  0% {
-    transform: scale(0.965) translateY(14px);
-  }
-
-  48% {
-    transform: scale(1.008) translateY(-2px);
-  }
-
-  100% {
-    transform: scale(1) translateY(0);
-  }
-}
-
-@keyframes scoreButtonEnter {
-  0% {
-    opacity: 0;
-    transform: translateX(-50%) translateY(46px) scale(0.9);
-  }
-
-  62% {
-    opacity: 1;
-    transform: translateX(-50%) translateY(-5px) scale(1.025);
-  }
-
-  100% {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0) scale(1);
-  }
-}
-
-@keyframes scoreButtonBlueSweep {
-  0% {
-    transform: translateX(-115%);
-    opacity: 0;
-  }
-
-  12% {
-    opacity: 1;
-  }
-
-  48% {
-    transform: translateX(115%);
-    opacity: 1;
-  }
-
-  60% {
-    opacity: 0;
-  }
-
-  100% {
-    transform: translateX(115%);
-    opacity: 0;
-  }
-}
-
-@keyframes boundaryToastEnter {
-  0% {
-    opacity: 0;
-    transform: translateX(-50%) translateY(46px) scale(0.9);
-  }
-
-  60% {
-    opacity: 1;
-    transform: translateX(-50%) translateY(-6px) scale(1.025);
-  }
-
-  100% {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0) scale(1);
-  }
-}
-
-@keyframes boundaryToastShake {
-  0%,
-  100% {
-    transform: translateX(-50%) translateY(0) scale(1);
-  }
-
-  20% {
-    transform: translateX(calc(-50% - 7px)) translateY(0) scale(1);
-  }
-
-  40% {
-    transform: translateX(calc(-50% + 7px)) translateY(0) scale(1);
-  }
-
-  60% {
-    transform: translateX(calc(-50% - 5px)) translateY(0) scale(1);
-  }
-
-  80% {
-    transform: translateX(calc(-50% + 5px)) translateY(0) scale(1);
-  }
-}
-
-@keyframes boundaryToastExit {
-  0% {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0) scale(1);
-  }
-
-  28% {
-    opacity: 1;
-    transform: translateX(-50%) translateY(-8px) scale(1.025);
-  }
-
-  100% {
-    opacity: 0;
-    transform: translateX(-50%) translateY(34px) scale(0.94);
-  }
-}
-
-/* ----------------------------- */
-/* Mobile adjustments */
-/* ----------------------------- */
-
-@media (max-width: 768px) {
-  .map-screen {
-    padding: 24px 24px 72px 24px;
-  }
-
-  .map-frame {
-    width: 100%;
-    border-radius: 24px;
-  }
-
-  .map-reveal-window {
-    clip-path: inset(0 round 24px);
-  }
-
-  .map-reveal-window .leaflet-container {
-    border-radius: 24px;
-  }
-
-  .game-hint-button.map-screen-hints {
-    left: 12px !important;
-    bottom: 12px !important;
-  }
-
-  .score-location-button {
-    bottom: 216px !important;
-  }
-
-  .boundary-warning-toast {
-    bottom: 136px;
-    max-width: calc(100vw - 32px);
-    white-space: normal;
-  }
-
-  @keyframes mapWindowReveal {
-    0% {
-      clip-path: circle(0% at 50% 50%);
-      opacity: 0;
-    }
-
-    18% {
-      clip-path: circle(14% at 50% 50%);
-      opacity: 0.62;
-    }
-
-    42% {
-      clip-path: circle(42% at 50% 50%);
-      opacity: 0.88;
-    }
-
-    72% {
-      clip-path: circle(86% at 50% 50%);
-      opacity: 1;
-    }
-
-    99% {
-      clip-path: circle(142% at 50% 50%);
-      opacity: 1;
-    }
-
-    100% {
-      clip-path: inset(0 round 24px);
-      opacity: 1;
-    }
+    transform: translateX(-50%) translateY(0);
   }
 }
